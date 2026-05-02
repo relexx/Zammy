@@ -44,10 +44,11 @@ class CreateTicketViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             runCatching { api.getGroups() }.fold(
                 onSuccess = { groups ->
+                    val activeGroups = groups.filter { g -> g.active != false }
                     _uiState.update {
                         it.copy(
-                            groups = groups.filter { g -> g.active != false },
-                            selectedGroupId = groups.firstOrNull()?.id,
+                            groups = activeGroups,
+                            selectedGroupId = activeGroups.firstOrNull()?.id,
                             isLoading = false
                         )
                     }

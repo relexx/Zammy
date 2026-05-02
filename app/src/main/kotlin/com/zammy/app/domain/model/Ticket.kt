@@ -1,7 +1,5 @@
 package com.zammy.app.domain.model
 
-import java.util.Date
-
 data class Ticket(
     val id: Int,
     val number: Int,

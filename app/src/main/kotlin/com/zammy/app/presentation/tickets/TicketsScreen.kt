@@ -111,7 +111,7 @@ fun TicketsScreen(
 
             if (uiState.searchResults != null) {
                 TicketList(
-                    tickets = uiState.searchResults!!,
+                    tickets = uiState.searchResults.orEmpty(),
                     isRefreshing = false,
                     onRefresh = {},
                     onTicketClick = onTicketClick
