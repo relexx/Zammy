@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zammy</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Bei Zammad anmelden</string>
+    <string name="login_server_url">Server-URL</string>
+    <string name="login_server_url_hint">https://ihr-zammad.beispiel.de</string>
+    <string name="login_username">Benutzername</string>
+    <string name="login_password">Passwort</string>
+    <string name="login_button">Anmelden</string>
+    <string name="login_loading">Anmeldung läuft…</string>
+    <string name="login_error_empty_fields">Bitte alle Felder ausfüllen</string>
+    <string name="login_error_invalid_url">Bitte eine gültige URL eingeben</string>
+    <string name="login_error_failed">Anmeldung fehlgeschlagen. Zugangsdaten prüfen.</string>
+
+    <!-- Tickets Screen -->
+    <string name="tickets_title">Tickets</string>
+    <string name="tickets_tab_open">Offen</string>
+    <string name="tickets_tab_pending">Ausstehend</string>
+    <string name="tickets_tab_closed">Geschlossen</string>
+    <string name="tickets_search_hint">Tickets suchen…</string>
+    <string name="tickets_empty">Keine Tickets gefunden</string>
+    <string name="tickets_pull_to_refresh">Zum Aktualisieren ziehen</string>
+    <string name="tickets_loading">Tickets werden geladen…</string>
+    <string name="tickets_error">Tickets konnten nicht geladen werden</string>
+
+    <!-- Ticket Detail -->
+    <string name="ticket_detail_title">Ticket #%1$d</string>
+    <string name="ticket_detail_status">Status</string>
+    <string name="ticket_detail_priority">Priorität</string>
+    <string name="ticket_detail_owner">Bearbeiter</string>
+    <string name="ticket_detail_group">Gruppe</string>
+    <string name="ticket_detail_created">Erstellt</string>
+    <string name="ticket_detail_updated">Aktualisiert</string>
+    <string name="ticket_detail_add_reply">Antwort hinzufügen</string>
+    <string name="ticket_detail_loading">Ticket wird geladen…</string>
+    <string name="ticket_detail_error">Ticket konnte nicht geladen werden</string>
+    <string name="ticket_detail_update_success">Ticket erfolgreich aktualisiert</string>
+    <string name="ticket_detail_update_error">Ticket konnte nicht aktualisiert werden</string>
+
+    <!-- Create Ticket -->
+    <string name="create_ticket_title">Neues Ticket</string>
+    <string name="create_ticket_subject">Betreff</string>
+    <string name="create_ticket_body">Beschreibung</string>
+    <string name="create_ticket_group">Gruppe</string>
+    <string name="create_ticket_priority">Priorität</string>
+    <string name="create_ticket_submit">Ticket erstellen</string>
+    <string name="create_ticket_attach_file">Datei anhängen</string>
+    <string name="create_ticket_success">Ticket erfolgreich erstellt</string>
+    <string name="create_ticket_error">Ticket konnte nicht erstellt werden</string>
+    <string name="create_ticket_empty_fields">Betreff und Beschreibung sind erforderlich</string>
+
+    <!-- Add Comment -->
+    <string name="add_comment_title">Antwort hinzufügen</string>
+    <string name="add_comment_body">Ihre Antwort…</string>
+    <string name="add_comment_submit">Senden</string>
+    <string name="add_comment_attach_file">Datei anhängen</string>
+    <string name="add_comment_success">Antwort erfolgreich gesendet</string>
+    <string name="add_comment_error">Antwort konnte nicht gesendet werden</string>
+    <string name="add_comment_empty">Antwort darf nicht leer sein</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_server_section">Server</string>
+    <string name="settings_server_url">Server-URL</string>
+    <string name="settings_account_section">Konto</string>
+    <string name="settings_username">Benutzername</string>
+    <string name="settings_logout">Abmelden</string>
+    <string name="settings_notifications_section">Benachrichtigungen</string>
+    <string name="settings_notification_interval">Synchronisierungsintervall</string>
+    <string name="settings_notification_interval_15">Alle 15 Minuten</string>
+    <string name="settings_notification_interval_30">Alle 30 Minuten</string>
+    <string name="settings_notification_interval_60">Jede Stunde</string>
+    <string name="settings_trust_all_certs">Alle Zertifikate vertrauen (unsicher)</string>
+    <string name="settings_trust_all_certs_warning">Nur für selbst gehostete Server mit selbst signierten Zertifikaten aktivieren</string>
+    <string name="settings_save">Einstellungen speichern</string>
+    <string name="settings_saved">Einstellungen gespeichert</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_new_tickets">Neue Tickets</string>
+    <string name="notification_channel_new_tickets_desc">Benachrichtigungen für neue Tickets</string>
+    <string name="notification_channel_updates">Ticket-Aktualisierungen</string>
+    <string name="notification_channel_updates_desc">Benachrichtigungen für Ticket-Aktualisierungen</string>
+    <string name="notification_new_ticket_title">Neues Ticket</string>
+    <string name="notification_new_ticket_body">Ticket #%1$d: %2$s</string>
+    <string name="notification_updated_ticket_title">Ticket aktualisiert</string>
+    <string name="notification_updated_ticket_body">Ticket #%1$d wurde aktualisiert</string>
+
+    <!-- Priority labels -->
+    <string name="priority_low">Niedrig</string>
+    <string name="priority_normal">Normal</string>
+    <string name="priority_high">Hoch</string>
+
+    <!-- Status labels -->
+    <string name="status_new">Neu</string>
+    <string name="status_open">Offen</string>
+    <string name="status_pending_reminder">Ausstehend (Erinnerung)</string>
+    <string name="status_pending_close">Ausstehend (Schließen)</string>
+    <string name="status_closed">Geschlossen</string>
+    <string name="status_merged">Zusammengeführt</string>
+
+    <!-- Common -->
+    <string name="action_retry">Wiederholen</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_done">Fertig</string>
+    <string name="loading">Laden…</string>
+    <string name="error_generic">Etwas ist schiefgelaufen</string>
+    <string name="error_network">Netzwerkfehler. Verbindung prüfen.</string>
+</resources>

@@ -1,0 +1,89 @@
+package com.zammy.app.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.zammy.app.presentation.createticket.CreateTicketScreen
+import com.zammy.app.presentation.login.LoginScreen
+import com.zammy.app.presentation.settings.SettingsScreen
+import com.zammy.app.presentation.ticketdetail.TicketDetailScreen
+import com.zammy.app.presentation.tickets.TicketsScreen
+
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Tickets : Screen("tickets")
+    object TicketDetail : Screen("ticket_detail/{ticketId}") {
+        fun createRoute(ticketId: Int) = "ticket_detail/$ticketId"
+    }
+    object CreateTicket : Screen("create_ticket")
+    object Settings : Screen("settings")
+}
+
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Login.route
+    ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Tickets.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Tickets.route) {
+            TicketsScreen(
+                onTicketClick = { ticketId ->
+                    navController.navigate(Screen.TicketDetail.createRoute(ticketId))
+                },
+                onCreateTicket = {
+                    navController.navigate(Screen.CreateTicket.route)
+                },
+                onSettings = {
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+
+        composable(
+            route = Screen.TicketDetail.route,
+            arguments = listOf(navArgument("ticketId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val ticketId = backStackEntry.arguments?.getInt("ticketId") ?: return@composable
+            TicketDetailScreen(
+                ticketId = ticketId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.CreateTicket.route) {
+            CreateTicketScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onTicketCreated = { ticketId ->
+                    navController.popBackStack()
+                    navController.navigate(Screen.TicketDetail.createRoute(ticketId))
+                }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+    }
+}

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zammy</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Sign In to Zammad</string>
+    <string name="login_server_url">Server URL</string>
+    <string name="login_server_url_hint">https://your-zammad.example.com</string>
+    <string name="login_username">Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_loading">Signing in…</string>
+    <string name="login_error_empty_fields">Please fill in all fields</string>
+    <string name="login_error_invalid_url">Please enter a valid URL</string>
+    <string name="login_error_failed">Login failed. Check your credentials.</string>
+
+    <!-- Tickets Screen -->
+    <string name="tickets_title">Tickets</string>
+    <string name="tickets_tab_open">Open</string>
+    <string name="tickets_tab_pending">Pending</string>
+    <string name="tickets_tab_closed">Closed</string>
+    <string name="tickets_search_hint">Search tickets…</string>
+    <string name="tickets_empty">No tickets found</string>
+    <string name="tickets_pull_to_refresh">Pull to refresh</string>
+    <string name="tickets_loading">Loading tickets…</string>
+    <string name="tickets_error">Failed to load tickets</string>
+
+    <!-- Ticket Detail -->
+    <string name="ticket_detail_title">Ticket #%1$d</string>
+    <string name="ticket_detail_status">Status</string>
+    <string name="ticket_detail_priority">Priority</string>
+    <string name="ticket_detail_owner">Owner</string>
+    <string name="ticket_detail_group">Group</string>
+    <string name="ticket_detail_created">Created</string>
+    <string name="ticket_detail_updated">Updated</string>
+    <string name="ticket_detail_add_reply">Add Reply</string>
+    <string name="ticket_detail_loading">Loading ticket…</string>
+    <string name="ticket_detail_error">Failed to load ticket</string>
+    <string name="ticket_detail_update_success">Ticket updated successfully</string>
+    <string name="ticket_detail_update_error">Failed to update ticket</string>
+
+    <!-- Create Ticket -->
+    <string name="create_ticket_title">New Ticket</string>
+    <string name="create_ticket_subject">Subject</string>
+    <string name="create_ticket_body">Description</string>
+    <string name="create_ticket_group">Group</string>
+    <string name="create_ticket_priority">Priority</string>
+    <string name="create_ticket_submit">Create Ticket</string>
+    <string name="create_ticket_attach_file">Attach File</string>
+    <string name="create_ticket_success">Ticket created successfully</string>
+    <string name="create_ticket_error">Failed to create ticket</string>
+    <string name="create_ticket_empty_fields">Subject and description are required</string>
+
+    <!-- Add Comment -->
+    <string name="add_comment_title">Add Reply</string>
+    <string name="add_comment_body">Your reply…</string>
+    <string name="add_comment_submit">Send</string>
+    <string name="add_comment_attach_file">Attach File</string>
+    <string name="add_comment_success">Reply sent successfully</string>
+    <string name="add_comment_error">Failed to send reply</string>
+    <string name="add_comment_empty">Reply cannot be empty</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_server_section">Server</string>
+    <string name="settings_server_url">Server URL</string>
+    <string name="settings_account_section">Account</string>
+    <string name="settings_username">Username</string>
+    <string name="settings_logout">Logout</string>
+    <string name="settings_notifications_section">Notifications</string>
+    <string name="settings_notification_interval">Sync Interval</string>
+    <string name="settings_notification_interval_15">Every 15 minutes</string>
+    <string name="settings_notification_interval_30">Every 30 minutes</string>
+    <string name="settings_notification_interval_60">Every hour</string>
+    <string name="settings_trust_all_certs">Trust all certificates (insecure)</string>
+    <string name="settings_trust_all_certs_warning">Only enable for self-hosted servers with self-signed certificates</string>
+    <string name="settings_save">Save Settings</string>
+    <string name="settings_saved">Settings saved</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_new_tickets">New Tickets</string>
+    <string name="notification_channel_new_tickets_desc">Notifications for new tickets</string>
+    <string name="notification_channel_updates">Ticket Updates</string>
+    <string name="notification_channel_updates_desc">Notifications for ticket updates</string>
+    <string name="notification_new_ticket_title">New Ticket</string>
+    <string name="notification_new_ticket_body">Ticket #%1$d: %2$s</string>
+    <string name="notification_updated_ticket_title">Ticket Updated</string>
+    <string name="notification_updated_ticket_body">Ticket #%1$d has been updated</string>
+
+    <!-- Priority labels -->
+    <string name="priority_low">Low</string>
+    <string name="priority_normal">Normal</string>
+    <string name="priority_high">High</string>
+
+    <!-- Status labels -->
+    <string name="status_new">New</string>
+    <string name="status_open">Open</string>
+    <string name="status_pending_reminder">Pending Reminder</string>
+    <string name="status_pending_close">Pending Close</string>
+    <string name="status_closed">Closed</string>
+    <string name="status_merged">Merged</string>
+
+    <!-- Common -->
+    <string name="action_retry">Retry</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_back">Back</string>
+    <string name="action_done">Done</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong</string>
+    <string name="error_network">Network error. Check your connection.</string>
+</resources>
