@@ -69,7 +69,7 @@ data class AttachmentRequest(
 data class ArticleRequest(
     @SerializedName("subject") val subject: String?,
     @SerializedName("body") val body: String,
-    @SerializedName("type") val type: String = "note",
+    @SerializedName("type") val type: String = "web",
     @SerializedName("internal") val internal: Boolean = false,
     @SerializedName("content_type") val contentType: String = "text/plain",
     @SerializedName("attachments") val attachments: List<AttachmentRequest>? = null
@@ -79,7 +79,6 @@ data class CreateTicketRequest(
     @SerializedName("title") val title: String,
     @SerializedName("group_id") val groupId: Int,
     @SerializedName("priority_id") val priorityId: Int,
-    @SerializedName("state") val state: String = "new",
     @SerializedName("article") val article: ArticleRequest
 )
 
