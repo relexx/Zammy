@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.room.Room
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.zammy.app.BuildConfig
 import com.zammy.app.data.api.ZammadApiService
 import com.zammy.app.data.local.ZammyDatabase
 import com.zammy.app.data.local.dao.TicketDao
@@ -15,7 +16,8 @@ import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.repository.TicketRepository
 import com.zammy.app.domain.repository.UserRepository
 import com.zammy.app.util.AuthInterceptor
-import dagger.Binds
+import com.zammy.app.util.BaseUrlInterceptor
+import com.zammy.app.util.DynamicTrustManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,6 +30,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
+import javax.net.ssl.SSLContext
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -61,14 +64,25 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        authInterceptor: AuthInterceptor
+        authInterceptor: AuthInterceptor,
+        baseUrlInterceptor: BaseUrlInterceptor,
+        dynamicTrustManager: DynamicTrustManager
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+                    else HttpLoggingInterceptor.Level.NONE
         }
+
+        val sslContext = SSLContext.getInstance("TLS").apply {
+            init(null, arrayOf(dynamicTrustManager), null)
+        }
+
         return OkHttpClient.Builder()
+            .addInterceptor(baseUrlInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
+            .sslSocketFactory(sslContext.socketFactory, dynamicTrustManager)
+            .hostnameVerifier { _, _ -> dynamicTrustManager.acceptedIssuers.isEmpty() }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -77,20 +91,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        settingsRepository: SettingsRepository
-    ): Retrofit {
-        val baseUrl = settingsRepository.getServerUrl().let {
-            if (it.isBlank()) "https://placeholder.example.com" else it
-        }.trimEnd('/') + "/"
-
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit =
+        Retrofit.Builder()
+            .baseUrl("https://placeholder.example.com/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-    }
 
     @Provides
     @Singleton

@@ -1,5 +1,9 @@
 package com.zammy.app.presentation.createticket
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -35,7 +41,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +59,7 @@ fun CreateTicketScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var groupExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.createdTicket) {
@@ -64,6 +73,21 @@ fun CreateTicketScreen(
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
+    }
+
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
+        val files = uris.mapNotNull { uri ->
+            try {
+                val filename = getFilenameFromUri(context, uri)
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                if (filename != null && bytes != null) Pair(filename, bytes) else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+        viewModel.onAttachmentsSelected(files)
     }
 
     Scaffold(
@@ -108,7 +132,6 @@ fun CreateTicketScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Group selection
             if (uiState.groups.isNotEmpty()) {
                 ExposedDropdownMenuBox(
                     expanded = groupExpanded,
@@ -142,7 +165,6 @@ fun CreateTicketScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Priority selection
             Text(
                 text = stringResource(R.string.create_ticket_priority),
                 style = MaterialTheme.typography.labelLarge
@@ -163,6 +185,26 @@ fun CreateTicketScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { fileLauncher.launch(arrayOf("*/*")) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    Icons.Default.AttachFile,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = if (uiState.attachments.isEmpty()) {
+                        stringResource(R.string.create_ticket_attach_file)
+                    } else {
+                        stringResource(R.string.attachment_files_selected, uiState.attachments.size)
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
@@ -179,3 +221,10 @@ fun CreateTicketScreen(
         }
     }
 }
+
+private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =
+    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        cursor.moveToFirst()
+        if (nameIndex >= 0) cursor.getString(nameIndex) else null
+    }

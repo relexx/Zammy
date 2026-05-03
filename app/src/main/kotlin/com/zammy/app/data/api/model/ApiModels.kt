@@ -60,6 +60,21 @@ data class GroupDto(
     @SerializedName("active") val active: Boolean?
 )
 
+data class AttachmentRequest(
+    @SerializedName("filename") val filename: String,
+    @SerializedName("data") val data: String,
+    @SerializedName("mime-type") val mimeType: String
+)
+
+data class ArticleRequest(
+    @SerializedName("subject") val subject: String?,
+    @SerializedName("body") val body: String,
+    @SerializedName("type") val type: String = "note",
+    @SerializedName("internal") val internal: Boolean = false,
+    @SerializedName("content_type") val contentType: String = "text/plain",
+    @SerializedName("attachments") val attachments: List<AttachmentRequest>? = null
+)
+
 data class CreateTicketRequest(
     @SerializedName("title") val title: String,
     @SerializedName("group_id") val groupId: Int,
@@ -72,14 +87,6 @@ data class UpdateTicketRequest(
     @SerializedName("state_id") val stateId: Int?,
     @SerializedName("priority_id") val priorityId: Int?,
     @SerializedName("owner_id") val ownerId: Int?
-)
-
-data class ArticleRequest(
-    @SerializedName("subject") val subject: String?,
-    @SerializedName("body") val body: String,
-    @SerializedName("type") val type: String = "note",
-    @SerializedName("internal") val internal: Boolean = false,
-    @SerializedName("content_type") val contentType: String = "text/plain"
 )
 
 data class SearchResult(

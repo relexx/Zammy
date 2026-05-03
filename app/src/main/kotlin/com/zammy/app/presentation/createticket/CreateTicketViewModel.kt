@@ -19,7 +19,8 @@ data class CreateTicketUiState(
     val body: String = "",
     val groups: List<GroupDto> = emptyList(),
     val selectedGroupId: Int? = null,
-    val selectedPriorityId: Int = 2, // Default: normal
+    val selectedPriorityId: Int = 2,
+    val attachments: List<Pair<String, ByteArray>> = emptyList(),
     val isLoading: Boolean = false,
     val isSubmitting: Boolean = false,
     val error: String? = null,
@@ -76,6 +77,10 @@ class CreateTicketViewModel @Inject constructor(
         _uiState.update { it.copy(selectedPriorityId = priorityId) }
     }
 
+    fun onAttachmentsSelected(files: List<Pair<String, ByteArray>>) {
+        _uiState.update { it.copy(attachments = files) }
+    }
+
     fun submit() {
         val state = _uiState.value
         if (state.title.isBlank() || state.body.isBlank()) {
@@ -93,7 +98,8 @@ class CreateTicketViewModel @Inject constructor(
                 title = state.title,
                 body = state.body,
                 groupId = groupId,
-                priorityId = state.selectedPriorityId
+                priorityId = state.selectedPriorityId,
+                attachments = state.attachments
             ).fold(
                 onSuccess = { ticket ->
                     _uiState.update { it.copy(isSubmitting = false, createdTicket = ticket) }

@@ -100,6 +100,11 @@
     <string name="status_closed">Closed</string>
     <string name="status_merged">Merged</string>
 
+    <!-- Ticket Detail Edit -->
+    <string name="ticket_detail_change_status">Change Status</string>
+    <string name="ticket_detail_change_priority">Change Priority</string>
+    <string name="attachment_files_selected">%1$d file(s) attached</string>
+
     <!-- Common -->
     <string name="action_retry">Retry</string>
     <string name="action_cancel">Cancel</string>

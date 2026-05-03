@@ -1,6 +1,7 @@
 package com.zammy.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,7 +24,7 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(initialTicketId: Int? = null) {
     val navController = rememberNavController()
 
     NavHost(
@@ -36,11 +37,19 @@ fun AppNavigation() {
                     navController.navigate(Screen.Tickets.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                    if (initialTicketId != null) {
+                        navController.navigate(Screen.TicketDetail.createRoute(initialTicketId))
+                    }
                 }
             )
         }
 
         composable(Screen.Tickets.route) {
+            LaunchedEffect(initialTicketId) {
+                if (initialTicketId != null) {
+                    navController.navigate(Screen.TicketDetail.createRoute(initialTicketId))
+                }
+            }
             TicketsScreen(
                 onTicketClick = { ticketId ->
                     navController.navigate(Screen.TicketDetail.createRoute(ticketId))

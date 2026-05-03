@@ -1,15 +1,24 @@
 package com.zammy.app.presentation.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.repository.UserRepository
+import com.zammy.app.workers.TicketSyncWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class LoginUiState(
@@ -24,7 +33,8 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -64,15 +74,14 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            // Save credentials temporarily to allow the interceptor to use them
             settingsRepository.setServerUrl(state.serverUrl)
             settingsRepository.setUsername(state.username)
             settingsRepository.setPassword(state.password)
 
-            // Verify credentials by calling the users/me endpoint
             val result = userRepository.getCurrentUser()
             result.fold(
                 onSuccess = {
+                    scheduleSync(settingsRepository.getNotificationIntervalMinutes())
                     _uiState.update { it.copy(isLoading = false, isLoggedIn = true) }
                 },
                 onFailure = { error ->
@@ -86,5 +95,23 @@ class LoginViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun scheduleSync(intervalMinutes: Int) {
+        val request = PeriodicWorkRequestBuilder<TicketSyncWorker>(
+            intervalMinutes.toLong(), TimeUnit.MINUTES
+        )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            TicketSyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 }

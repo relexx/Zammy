@@ -1,5 +1,10 @@
 package com.zammy.app.presentation.ticketdetail
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -37,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +63,7 @@ fun TicketDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(ticketId) {
         viewModel.loadTicket(ticketId)
@@ -73,20 +83,135 @@ fun TicketDetailScreen(
         }
     }
 
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
+        val files = uris.mapNotNull { uri ->
+            try {
+                val filename = getFilenameFromUri(context, uri)
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                if (filename != null && bytes != null) Pair(filename, bytes) else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+        viewModel.onReplyAttachmentsChange(files)
+    }
+
+    if (uiState.showStatusDialog) {
+        val statuses = listOf(
+            1 to stringResource(R.string.status_new),
+            2 to stringResource(R.string.status_open),
+            3 to stringResource(R.string.status_pending_reminder),
+            4 to stringResource(R.string.status_closed),
+            7 to stringResource(R.string.status_pending_close)
+        )
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleStatusDialog(false) },
+            title = { Text(stringResource(R.string.ticket_detail_change_status)) },
+            text = {
+                Column {
+                    statuses.forEach { (id, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.updateStatus(ticketId, id) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.ticket?.state?.lowercase() == label.lowercase(),
+                                onClick = { viewModel.updateStatus(ticketId, id) }
+                            )
+                            Text(label, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleStatusDialog(false) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    if (uiState.showPriorityDialog) {
+        val priorities = listOf(
+            1 to stringResource(R.string.priority_low),
+            2 to stringResource(R.string.priority_normal),
+            3 to stringResource(R.string.priority_high)
+        )
+        AlertDialog(
+            onDismissRequest = { viewModel.togglePriorityDialog(false) },
+            title = { Text(stringResource(R.string.ticket_detail_change_priority)) },
+            text = {
+                Column {
+                    priorities.forEach { (id, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.updatePriority(ticketId, id) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.ticket?.priority?.lowercase() == label.lowercase(),
+                                onClick = { viewModel.updatePriority(ticketId, id) }
+                            )
+                            Text(label, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { viewModel.togglePriorityDialog(false) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (uiState.showReplyDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.toggleReplyDialog(false) },
             title = { Text(stringResource(R.string.add_comment_title)) },
             text = {
-                OutlinedTextField(
-                    value = uiState.replyText,
-                    onValueChange = viewModel::onReplyTextChange,
-                    placeholder = { Text(stringResource(R.string.add_comment_body)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    maxLines = 6
-                )
+                Column {
+                    OutlinedTextField(
+                        value = uiState.replyText,
+                        onValueChange = viewModel::onReplyTextChange,
+                        placeholder = { Text(stringResource(R.string.add_comment_body)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        maxLines = 6
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { attachmentLauncher.launch(arrayOf("*/*")) }) {
+                            Icon(
+                                Icons.Default.AttachFile,
+                                contentDescription = stringResource(R.string.add_comment_attach_file)
+                            )
+                        }
+                        if (uiState.replyAttachments.isNotEmpty()) {
+                            Text(
+                                text = stringResource(
+                                    R.string.attachment_files_selected,
+                                    uiState.replyAttachments.size
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
@@ -151,7 +276,11 @@ fun TicketDetailScreen(
                         .padding(paddingValues)
                 ) {
                     item {
-                        TicketInfoCard(uiState)
+                        TicketInfoCard(
+                            uiState = uiState,
+                            onChangeStatus = { viewModel.toggleStatusDialog(true) },
+                            onChangePriority = { viewModel.togglePriorityDialog(true) }
+                        )
                         HorizontalDivider()
                         Text(
                             text = "Timeline",
@@ -181,7 +310,11 @@ fun TicketDetailScreen(
 }
 
 @Composable
-fun TicketInfoCard(uiState: TicketDetailUiState) {
+fun TicketInfoCard(
+    uiState: TicketDetailUiState,
+    onChangeStatus: () -> Unit,
+    onChangePriority: () -> Unit
+) {
     val ticket = uiState.ticket ?: return
     Card(
         modifier = Modifier
@@ -196,11 +329,58 @@ fun TicketInfoCard(uiState: TicketDetailUiState) {
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
-            InfoRow(label = stringResource(R.string.ticket_detail_status), value = ticket.state)
-            InfoRow(label = stringResource(R.string.ticket_detail_priority), value = ticket.priority)
+            EditableInfoRow(
+                label = stringResource(R.string.ticket_detail_status),
+                value = ticket.state,
+                isUpdating = uiState.isUpdating,
+                onEdit = onChangeStatus
+            )
+            EditableInfoRow(
+                label = stringResource(R.string.ticket_detail_priority),
+                value = ticket.priority,
+                isUpdating = uiState.isUpdating,
+                onEdit = onChangePriority
+            )
             InfoRow(label = stringResource(R.string.ticket_detail_group), value = ticket.group)
             InfoRow(label = stringResource(R.string.ticket_detail_created), value = ticket.createdAt)
             InfoRow(label = stringResource(R.string.ticket_detail_updated), value = ticket.updatedAt)
+        }
+    }
+}
+
+@Composable
+fun EditableInfoRow(
+    label: String,
+    value: String,
+    isUpdating: Boolean,
+    onEdit: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            IconButton(onClick = onEdit, enabled = !isUpdating) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit $label",
+                    modifier = Modifier.padding(start = 4.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -273,3 +453,10 @@ fun ArticleItem(article: Article) {
         }
     }
 }
+
+private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =
+    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        cursor.moveToFirst()
+        if (nameIndex >= 0) cursor.getString(nameIndex) else null
+    }

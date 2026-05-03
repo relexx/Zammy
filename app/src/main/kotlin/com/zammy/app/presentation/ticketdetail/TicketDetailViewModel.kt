@@ -21,8 +21,12 @@ data class TicketDetailUiState(
     val error: String? = null,
     val successMessage: String? = null,
     val replyText: String = "",
+    val replyAttachments: List<Pair<String, ByteArray>> = emptyList(),
     val isSubmittingReply: Boolean = false,
-    val showReplyDialog: Boolean = false
+    val showReplyDialog: Boolean = false,
+    val showStatusDialog: Boolean = false,
+    val showPriorityDialog: Boolean = false,
+    val isUpdating: Boolean = false
 )
 
 @HiltViewModel
@@ -56,49 +60,79 @@ class TicketDetailViewModel @Inject constructor(
         }
     }
 
-    fun updateTicket(
-        ticketId: Int,
-        stateId: Int? = null,
-        priorityId: Int? = null,
-        ownerId: Int? = null
-    ) {
+    fun updateStatus(ticketId: Int, stateId: Int) {
         viewModelScope.launch {
-            getTicketDetailUseCase.updateTicket(ticketId, stateId, priorityId, ownerId).fold(
+            _uiState.update { it.copy(isUpdating = true, showStatusDialog = false) }
+            getTicketDetailUseCase.updateTicket(ticketId, stateId = stateId).fold(
                 onSuccess = { ticket ->
                     _uiState.update {
                         it.copy(
                             ticket = ticket,
+                            isUpdating = false,
                             successMessage = "Ticket updated successfully"
                         )
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
                 }
             )
         }
+    }
+
+    fun updatePriority(ticketId: Int, priorityId: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdating = true, showPriorityDialog = false) }
+            getTicketDetailUseCase.updateTicket(ticketId, priorityId = priorityId).fold(
+                onSuccess = { ticket ->
+                    _uiState.update {
+                        it.copy(
+                            ticket = ticket,
+                            isUpdating = false,
+                            successMessage = "Ticket updated successfully"
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                }
+            )
+        }
+    }
+
+    fun toggleStatusDialog(show: Boolean) {
+        _uiState.update { it.copy(showStatusDialog = show) }
+    }
+
+    fun togglePriorityDialog(show: Boolean) {
+        _uiState.update { it.copy(showPriorityDialog = show) }
     }
 
     fun onReplyTextChange(text: String) {
         _uiState.update { it.copy(replyText = text) }
     }
 
+    fun onReplyAttachmentsChange(attachments: List<Pair<String, ByteArray>>) {
+        _uiState.update { it.copy(replyAttachments = attachments) }
+    }
+
     fun toggleReplyDialog(show: Boolean) {
-        _uiState.update { it.copy(showReplyDialog = show) }
+        _uiState.update { it.copy(showReplyDialog = show, replyAttachments = emptyList()) }
     }
 
     fun submitReply(ticketId: Int) {
-        val replyText = _uiState.value.replyText
-        if (replyText.isBlank()) return
+        val state = _uiState.value
+        if (state.replyText.isBlank()) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmittingReply = true) }
-            addCommentUseCase(ticketId, replyText).fold(
+            addCommentUseCase(ticketId, state.replyText, attachments = state.replyAttachments).fold(
                 onSuccess = { article ->
-                    _uiState.update { state ->
-                        state.copy(
-                            articles = state.articles + article,
+                    _uiState.update { s ->
+                        s.copy(
+                            articles = s.articles + article,
                             replyText = "",
+                            replyAttachments = emptyList(),
                             isSubmittingReply = false,
                             showReplyDialog = false,
                             successMessage = "Reply sent successfully"

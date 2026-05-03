@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.usecase.GetTicketsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,8 @@ class TicketsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TicketsUiState())
     val uiState: StateFlow<TicketsUiState> = _uiState.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         observeTickets()
@@ -78,11 +82,13 @@ class TicketsViewModel @Inject constructor(
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
         if (query.isBlank()) {
             _uiState.update { it.copy(searchResults = null) }
             return
         }
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
+            delay(300)
             getTicketsUseCase.search(query).fold(
                 onSuccess = { results ->
                     _uiState.update { it.copy(searchResults = results) }

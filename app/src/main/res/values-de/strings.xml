@@ -100,6 +100,11 @@
     <string name="status_closed">Geschlossen</string>
     <string name="status_merged">Zusammengeführt</string>
 
+    <!-- Ticket Detail Edit -->
+    <string name="ticket_detail_change_status">Status ändern</string>
+    <string name="ticket_detail_change_priority">Priorität ändern</string>
+    <string name="attachment_files_selected">%1$d Datei(en) angehängt</string>
+
     <!-- Common -->
     <string name="action_retry">Wiederholen</string>
     <string name="action_cancel">Abbrechen</string>

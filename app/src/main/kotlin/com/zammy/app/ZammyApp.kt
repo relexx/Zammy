@@ -3,6 +3,7 @@ package com.zammy.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.zammy.app.util.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -12,8 +13,16 @@ class ZammyApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var notificationHelper: NotificationHelper
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    override fun onCreate() {
+        super.onCreate()
+        notificationHelper.createNotificationChannels()
+    }
 }
