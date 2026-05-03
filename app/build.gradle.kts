@@ -22,6 +22,22 @@ android {
         }
     }
 
+    val keystoreFilePath = System.getenv("KEYSTORE_FILE")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAlias = System.getenv("KEY_ALIAS") ?: "zammy"
+    val keyPasswordEnv = System.getenv("KEY_PASSWORD")
+
+    signingConfigs {
+        create("release") {
+            if (keystoreFilePath != null) {
+                storeFile = file(keystoreFilePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                keyPassword = keyPasswordEnv
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -29,6 +45,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            val releaseConfig = signingConfigs.getByName("release")
+            if (releaseConfig.storeFile?.exists() == true) {
+                signingConfig = releaseConfig
+            }
         }
     }
 
