@@ -39,6 +39,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -165,8 +166,11 @@ fun TicketList(
     LaunchedEffect(pullToRefreshState.isRefreshing) {
         if (pullToRefreshState.isRefreshing) onRefresh()
     }
-    LaunchedEffect(isRefreshing) {
-        if (!isRefreshing) pullToRefreshState.endRefresh()
+    LaunchedEffect(Unit) {
+        snapshotFlow { isRefreshing }
+            .collect { refreshing ->
+                if (!refreshing) pullToRefreshState.endRefresh()
+            }
     }
 
     Box(
