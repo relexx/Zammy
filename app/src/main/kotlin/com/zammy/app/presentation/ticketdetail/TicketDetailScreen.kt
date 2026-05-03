@@ -1,7 +1,11 @@
 package com.zammy.app.presentation.ticketdetail
 
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -42,9 +46,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -440,10 +448,14 @@ fun ArticleItem(article: Article) {
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = article.body,
-                style = MaterialTheme.typography.bodySmall
-            )
+            if (article.contentType.startsWith("text/html", ignoreCase = true)) {
+                ArticleBodyWebView(html = article.body)
+            } else {
+                Text(
+                    text = article.body,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = article.createdAt,
@@ -452,6 +464,62 @@ fun ArticleItem(article: Article) {
             )
         }
     }
+}
+
+@Composable
+private fun ArticleBodyWebView(html: String, modifier: Modifier = Modifier) {
+    val textColorHex = "#%06X".format(MaterialTheme.colorScheme.onSurface.toArgb() and 0xFFFFFF)
+    val linkColorHex = "#%06X".format(MaterialTheme.colorScheme.primary.toArgb() and 0xFFFFFF)
+    val styledHtml = remember(html, textColorHex, linkColorHex) {
+        """<html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;padding:0;font-family:sans-serif;font-size:14px;line-height:1.5;
+     word-wrap:break-word;overflow-wrap:break-word;color:$textColorHex;background:transparent}
+img{max-width:100%;height:auto}
+table{max-width:100%;word-break:break-word}
+pre{white-space:pre-wrap}
+a{color:$linkColorHex}
+</style></head><body>$html</body></html>"""
+    }
+    var heightDp by remember { mutableStateOf(100.dp) }
+
+    AndroidView(
+        factory = { context ->
+            WebView(context).apply {
+                settings.apply {
+                    javaScriptEnabled = false
+                    allowFileAccess = false
+                    allowContentAccess = false
+                    setSupportZoom(false)
+                    loadWithOverviewMode = false
+                    useWideViewPort = false
+                }
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String) {
+                        view.post {
+                            val h = view.contentHeight
+                            if (h > 0) heightDp = h.dp
+                        }
+                    }
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView,
+                        request: WebResourceRequest
+                    ): Boolean {
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                        }
+                        return true
+                    }
+                }
+                loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
+            }
+        },
+        modifier = modifier.fillMaxWidth().height(heightDp)
+    )
 }
 
 private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =
