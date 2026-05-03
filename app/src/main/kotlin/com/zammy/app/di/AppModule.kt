@@ -30,6 +30,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
+import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 
 @Module
@@ -77,12 +78,17 @@ object AppModule {
             init(null, arrayOf(dynamicTrustManager), null)
         }
 
+        val defaultHostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier()
+
         return OkHttpClient.Builder()
             .addInterceptor(baseUrlInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .sslSocketFactory(sslContext.socketFactory, dynamicTrustManager)
-            .hostnameVerifier { _, _ -> dynamicTrustManager.acceptedIssuers.isEmpty() }
+            .hostnameVerifier { hostname, session ->
+                if (dynamicTrustManager.acceptedIssuers.isEmpty()) true
+                else defaultHostnameVerifier.verify(hostname, session)
+            }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
