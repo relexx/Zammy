@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'release/*'
   workflow_dispatch:
     inputs:
       version:
@@ -55,9 +57,13 @@ jobs:
       - name: Determine version tag
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
             echo "name=Zammy ${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            VERSION="${GITHUB_REF_NAME#release/}"
+            echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+            echo "name=Zammy ${VERSION}" >> $GITHUB_OUTPUT
           else
             echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "name=Zammy v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
