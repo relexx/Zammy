@@ -31,6 +31,10 @@
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.**
 
+# Error-prone annotations (referenced by Tink, transitive via security-crypto — not needed at runtime)
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+
 # Data classes
 -keep class com.zammy.app.data.api.model.** { *; }
 -keep class com.zammy.app.domain.model.** { *; }
