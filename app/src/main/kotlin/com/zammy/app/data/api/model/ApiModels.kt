@@ -76,6 +76,15 @@ data class ArticleRequest(
     @SerializedName("attachments") val attachments: List<AttachmentRequest>? = null
 )
 
+data class ArticleCreateRequest(
+    @SerializedName("ticket_id") val ticketId: Int,
+    @SerializedName("body") val body: String,
+    @SerializedName("type") val type: String = "web",
+    @SerializedName("internal") val internal: Boolean = false,
+    @SerializedName("content_type") val contentType: String = "text/plain",
+    @SerializedName("attachments") val attachments: List<AttachmentRequest>? = null
+)
+
 data class CreateTicketRequest(
     @SerializedName("title") val title: String,
     @SerializedName("group_id") val groupId: Int,

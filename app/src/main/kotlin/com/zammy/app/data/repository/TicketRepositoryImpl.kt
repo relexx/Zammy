@@ -2,6 +2,7 @@ package com.zammy.app.data.repository
 
 import android.util.Base64
 import com.zammy.app.data.api.ZammadApiService
+import com.zammy.app.data.api.model.ArticleCreateRequest
 import com.zammy.app.data.api.model.ArticleRequest
 import com.zammy.app.data.api.model.AttachmentRequest
 import com.zammy.app.data.api.model.CreateTicketRequest
@@ -166,24 +167,20 @@ class TicketRepositoryImpl @Inject constructor(
         attachments: List<Pair<String, ByteArray>>
     ): Result<Article> = runCatching {
         val encodedAttachments = attachments.map { (filename, data) ->
-            mapOf(
-                "filename" to filename,
-                "data" to Base64.encodeToString(data, Base64.NO_WRAP),
-                "mime-type" to guessMimeType(filename)
+            AttachmentRequest(
+                filename = filename,
+                data = Base64.encodeToString(data, Base64.NO_WRAP),
+                mimeType = guessMimeType(filename)
             )
-        }
-        val requestBody: MutableMap<String, Any> = mutableMapOf(
-            "ticket_id" to ticketId,
-            "body" to body,
-            "type" to "web",
-            "internal" to internal,
-            "content_type" to "text/plain"
+        }.takeIf { it.isNotEmpty() }
+        val request = ArticleCreateRequest(
+            ticketId = ticketId,
+            body = body,
+            internal = internal,
+            attachments = encodedAttachments
         )
-        if (encodedAttachments.isNotEmpty()) {
-            requestBody["attachments"] = encodedAttachments
-        }
         try {
-            val dto = api.createArticle(requestBody)
+            val dto = api.createArticle(request)
             Article(
                 id = dto.id,
                 ticketId = dto.ticketId,

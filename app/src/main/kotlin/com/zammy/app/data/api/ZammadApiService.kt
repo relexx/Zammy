@@ -1,6 +1,7 @@
 package com.zammy.app.data.api
 
 import com.zammy.app.data.api.model.ArticleDto
+import com.zammy.app.data.api.model.ArticleCreateRequest
 import com.zammy.app.data.api.model.ArticleRequest
 import com.zammy.app.data.api.model.CreateTicketRequest
 import com.zammy.app.data.api.model.GroupDto
@@ -46,7 +47,7 @@ interface ZammadApiService {
     ): List<ArticleDto>
 
     @POST("api/v1/ticket_articles")
-    suspend fun createArticle(@Body request: Map<String, Any>): ArticleDto
+    suspend fun createArticle(@Body request: ArticleCreateRequest): ArticleDto
 
     @GET("api/v1/users/me")
     suspend fun getCurrentUser(): UserDto
