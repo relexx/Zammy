@@ -89,7 +89,8 @@ data class UpdateTicketRequest(
     @SerializedName("group_id") val groupId: Int?,
     @SerializedName("priority_id") val priorityId: Int?,
     @SerializedName("owner_id") val ownerId: Int?,
-    @SerializedName("pending_time") val pendingTime: String?
+    @SerializedName("pending_time") val pendingTime: String?,
+    @SerializedName("customer") val customer: String?
 )
 
 data class SearchResult(

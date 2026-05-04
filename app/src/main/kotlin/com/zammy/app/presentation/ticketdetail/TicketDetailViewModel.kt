@@ -30,6 +30,7 @@ data class TicketDetailUiState(
     val showStatusDialog: Boolean = false,
     val showPriorityDialog: Boolean = false,
     val showGroupDialog: Boolean = false,
+    val showCustomerDialog: Boolean = false,
     val isUpdating: Boolean = false
 )
 
@@ -135,6 +136,27 @@ class TicketDetailViewModel @Inject constructor(
 
     fun toggleGroupDialog(show: Boolean) {
         _uiState.update { it.copy(showGroupDialog = show) }
+    }
+
+    fun toggleCustomerDialog(show: Boolean) {
+        _uiState.update { it.copy(showCustomerDialog = show) }
+    }
+
+    fun updateCustomer(ticketId: Int, customer: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdating = true, showCustomerDialog = false) }
+            getTicketDetailUseCase.updateTicket(ticketId, customer = customer).fold(
+                onSuccess = { ticket ->
+                    _uiState.update {
+                        it.copy(ticket = ticket, isUpdating = false,
+                            successMessage = "Ticket updated successfully")
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                }
+            )
+        }
     }
 
     fun onReplyTextChange(text: String) {

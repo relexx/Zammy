@@ -271,6 +271,36 @@ fun TicketDetailScreen(
         )
     }
 
+    if (uiState.showCustomerDialog) {
+        var customerInput by remember { mutableStateOf(uiState.ticket?.customerName ?: "") }
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleCustomerDialog(false) },
+            title = { Text(stringResource(R.string.ticket_detail_change_customer)) },
+            text = {
+                OutlinedTextField(
+                    value = customerInput,
+                    onValueChange = { customerInput = it },
+                    label = { Text(stringResource(R.string.create_ticket_customer)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.updateCustomer(ticketId, customerInput) },
+                    enabled = customerInput.isNotBlank()
+                ) {
+                    Text(stringResource(R.string.action_done))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleCustomerDialog(false) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (uiState.showPriorityDialog) {
         val priorities = listOf(
             1 to stringResource(R.string.priority_low),
@@ -414,7 +444,8 @@ fun TicketDetailScreen(
                             uiState = uiState,
                             onChangeStatus = { viewModel.toggleStatusDialog(true) },
                             onChangePriority = { viewModel.togglePriorityDialog(true) },
-                            onChangeGroup = { viewModel.toggleGroupDialog(true) }
+                            onChangeGroup = { viewModel.toggleGroupDialog(true) },
+                            onChangeCustomer = { viewModel.toggleCustomerDialog(true) }
                         )
                         HorizontalDivider()
                         Text(
@@ -449,7 +480,8 @@ fun TicketInfoCard(
     uiState: TicketDetailUiState,
     onChangeStatus: () -> Unit,
     onChangePriority: () -> Unit,
-    onChangeGroup: () -> Unit
+    onChangeGroup: () -> Unit,
+    onChangeCustomer: () -> Unit
 ) {
     val ticket = uiState.ticket ?: return
     Card(
@@ -483,9 +515,12 @@ fun TicketInfoCard(
                 isUpdating = uiState.isUpdating,
                 onEdit = onChangeGroup
             )
-            ticket.customerName?.let {
-                InfoRow(label = stringResource(R.string.ticket_detail_customer), value = it)
-            }
+            EditableInfoRow(
+                label = stringResource(R.string.ticket_detail_customer),
+                value = ticket.customerName ?: "-",
+                isUpdating = uiState.isUpdating,
+                onEdit = onChangeCustomer
+            )
             InfoRow(label = stringResource(R.string.ticket_detail_created), value = ticket.createdAt)
             InfoRow(label = stringResource(R.string.ticket_detail_updated), value = ticket.updatedAt)
         }

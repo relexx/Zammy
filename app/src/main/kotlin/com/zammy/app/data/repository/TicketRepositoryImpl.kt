@@ -137,14 +137,16 @@ class TicketRepositoryImpl @Inject constructor(
         groupId: Int?,
         priorityId: Int?,
         ownerId: Int?,
-        pendingTime: String?
+        pendingTime: String?,
+        customer: String?
     ): Result<Ticket> = runCatching {
         val request = UpdateTicketRequest(
             state = state,
             groupId = groupId,
             priorityId = priorityId,
             ownerId = ownerId,
-            pendingTime = pendingTime
+            pendingTime = pendingTime,
+            customer = customer
         )
         try {
             api.updateTicket(id, request)

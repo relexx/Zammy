@@ -22,8 +22,9 @@ class GetTicketDetailUseCase @Inject constructor(
         groupId: Int? = null,
         priorityId: Int? = null,
         ownerId: Int? = null,
-        pendingTime: String? = null
+        pendingTime: String? = null,
+        customer: String? = null
     ): Result<Ticket> {
-        return ticketRepository.updateTicket(id, state, groupId, priorityId, ownerId, pendingTime)
+        return ticketRepository.updateTicket(id, state, groupId, priorityId, ownerId, pendingTime, customer)
     }
 }
