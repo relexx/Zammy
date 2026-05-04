@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -174,26 +173,18 @@ fun TicketList(
             .fillMaxSize()
             .nestedScroll(pullToRefreshState.nestedScrollConnection)
     ) {
-        when {
-            isRefreshing && tickets.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+        if (tickets.isEmpty() && !isRefreshing) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.tickets_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            tickets.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.tickets_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            else -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(tickets, key = { it.id }) { ticket ->
-                        TicketItem(ticket = ticket, onClick = { onTicketClick(ticket.id) })
-                    }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(tickets, key = { it.id }) { ticket ->
+                    TicketItem(ticket = ticket, onClick = { onTicketClick(ticket.id) })
                 }
             }
         }

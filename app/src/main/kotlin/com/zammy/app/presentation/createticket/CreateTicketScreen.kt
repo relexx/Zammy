@@ -120,6 +120,16 @@ fun CreateTicketScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
+                value = uiState.customerEmail,
+                onValueChange = viewModel::onCustomerEmailChange,
+                label = { Text(stringResource(R.string.create_ticket_customer)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
                 value = uiState.body,
                 onValueChange = viewModel::onBodyChange,
                 label = { Text(stringResource(R.string.create_ticket_body)) },

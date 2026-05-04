@@ -103,6 +103,8 @@
     <!-- Ticket Detail Edit -->
     <string name="ticket_detail_change_status">Change Status</string>
     <string name="ticket_detail_change_priority">Change Priority</string>
+    <string name="ticket_detail_change_group">Change Group</string>
+    <string name="create_ticket_customer">Customer (Email)</string>
     <string name="attachment_files_selected">%1$d file(s) attached</string>
 
     <!-- Common -->

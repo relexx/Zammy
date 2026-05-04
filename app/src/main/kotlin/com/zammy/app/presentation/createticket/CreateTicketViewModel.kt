@@ -17,6 +17,7 @@ import javax.inject.Inject
 data class CreateTicketUiState(
     val title: String = "",
     val body: String = "",
+    val customerEmail: String = "",
     val groups: List<GroupDto> = emptyList(),
     val selectedGroupId: Int? = null,
     val selectedPriorityId: Int = 2,
@@ -69,6 +70,10 @@ class CreateTicketViewModel @Inject constructor(
         _uiState.update { it.copy(body = body, error = null) }
     }
 
+    fun onCustomerEmailChange(email: String) {
+        _uiState.update { it.copy(customerEmail = email) }
+    }
+
     fun onGroupSelected(groupId: Int) {
         _uiState.update { it.copy(selectedGroupId = groupId) }
     }
@@ -99,7 +104,8 @@ class CreateTicketViewModel @Inject constructor(
                 body = state.body,
                 groupId = groupId,
                 priorityId = state.selectedPriorityId,
-                attachments = state.attachments
+                attachments = state.attachments,
+                customer = state.customerEmail.takeIf { it.isNotBlank() }
             ).fold(
                 onSuccess = { ticket ->
                     _uiState.update { it.copy(isSubmitting = false, createdTicket = ticket) }

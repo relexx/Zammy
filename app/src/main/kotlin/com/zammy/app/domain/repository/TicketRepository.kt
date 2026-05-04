@@ -14,11 +14,13 @@ interface TicketRepository {
         body: String,
         groupId: Int,
         priorityId: Int,
-        attachments: List<Pair<String, ByteArray>> = emptyList()
+        attachments: List<Pair<String, ByteArray>> = emptyList(),
+        customer: String? = null
     ): Result<Ticket>
     suspend fun updateTicket(
         id: Int,
-        stateId: Int? = null,
+        state: String? = null,
+        groupId: Int? = null,
         priorityId: Int? = null,
         ownerId: Int? = null
     ): Result<Ticket>

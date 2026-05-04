@@ -99,7 +99,8 @@ class TicketRepositoryImpl @Inject constructor(
         body: String,
         groupId: Int,
         priorityId: Int,
-        attachments: List<Pair<String, ByteArray>>
+        attachments: List<Pair<String, ByteArray>>,
+        customer: String?
     ): Result<Ticket> = runCatching {
         val encodedAttachments = attachments.map { (filename, data) ->
             AttachmentRequest(
@@ -113,7 +114,8 @@ class TicketRepositoryImpl @Inject constructor(
             title = title,
             groupId = groupId,
             priorityId = priorityId,
-            customer = settingsRepository.getUsername().takeIf { it.isNotBlank() },
+            customer = customer?.takeIf { it.isNotBlank() }
+                ?: settingsRepository.getUsername().takeIf { it.isNotBlank() },
             article = ArticleRequest(
                 subject = title,
                 body = body,
@@ -131,18 +133,24 @@ class TicketRepositoryImpl @Inject constructor(
 
     override suspend fun updateTicket(
         id: Int,
-        stateId: Int?,
+        state: String?,
+        groupId: Int?,
         priorityId: Int?,
         ownerId: Int?
     ): Result<Ticket> = runCatching {
         val request = UpdateTicketRequest(
-            stateId = stateId,
+            state = state,
+            groupId = groupId,
             priorityId = priorityId,
             ownerId = ownerId
         )
-        api.updateTicket(id, request).toEntity().also { entity ->
-            ticketDao.insertTicket(entity)
-        }.toDomain()
+        try {
+            api.updateTicket(id, request).toEntity().also { entity ->
+                ticketDao.insertTicket(entity)
+            }.toDomain()
+        } catch (e: HttpException) {
+            throw RuntimeException(e.zammadError(), e)
+        }
     }
 
     override suspend fun addArticle(

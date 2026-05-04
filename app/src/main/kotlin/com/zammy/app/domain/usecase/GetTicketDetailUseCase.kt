@@ -18,10 +18,11 @@ class GetTicketDetailUseCase @Inject constructor(
 
     suspend fun updateTicket(
         id: Int,
-        stateId: Int? = null,
+        state: String? = null,
+        groupId: Int? = null,
         priorityId: Int? = null,
         ownerId: Int? = null
     ): Result<Ticket> {
-        return ticketRepository.updateTicket(id, stateId, priorityId, ownerId)
+        return ticketRepository.updateTicket(id, state, groupId, priorityId, ownerId)
     }
 }

@@ -2,6 +2,8 @@ package com.zammy.app.presentation.ticketdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zammy.app.data.api.ZammadApiService
+import com.zammy.app.data.api.model.GroupDto
 import com.zammy.app.domain.model.Article
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.usecase.AddCommentUseCase
@@ -17,6 +19,7 @@ import javax.inject.Inject
 data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val articles: List<Article> = emptyList(),
+    val groups: List<GroupDto> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
@@ -26,13 +29,15 @@ data class TicketDetailUiState(
     val showReplyDialog: Boolean = false,
     val showStatusDialog: Boolean = false,
     val showPriorityDialog: Boolean = false,
+    val showGroupDialog: Boolean = false,
     val isUpdating: Boolean = false
 )
 
 @HiltViewModel
 class TicketDetailViewModel @Inject constructor(
     private val getTicketDetailUseCase: GetTicketDetailUseCase,
-    private val addCommentUseCase: AddCommentUseCase
+    private val addCommentUseCase: AddCommentUseCase,
+    private val api: ZammadApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
@@ -57,20 +62,26 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(error = e.message) }
                 }
             )
+            loadGroups()
         }
     }
 
-    fun updateStatus(ticketId: Int, stateId: Int) {
+    private fun loadGroups() {
+        viewModelScope.launch {
+            runCatching { api.getGroups() }.onSuccess { groups ->
+                _uiState.update { it.copy(groups = groups.filter { g -> g.active != false }) }
+            }
+        }
+    }
+
+    fun updateStatus(ticketId: Int, state: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdating = true, showStatusDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, stateId = stateId).fold(
+            getTicketDetailUseCase.updateTicket(ticketId, state = state).fold(
                 onSuccess = { ticket ->
                     _uiState.update {
-                        it.copy(
-                            ticket = ticket,
-                            isUpdating = false,
-                            successMessage = "Ticket updated successfully"
-                        )
+                        it.copy(ticket = ticket, isUpdating = false,
+                            successMessage = "Ticket updated successfully")
                     }
                 },
                 onFailure = { e ->
@@ -86,11 +97,25 @@ class TicketDetailViewModel @Inject constructor(
             getTicketDetailUseCase.updateTicket(ticketId, priorityId = priorityId).fold(
                 onSuccess = { ticket ->
                     _uiState.update {
-                        it.copy(
-                            ticket = ticket,
-                            isUpdating = false,
-                            successMessage = "Ticket updated successfully"
-                        )
+                        it.copy(ticket = ticket, isUpdating = false,
+                            successMessage = "Ticket updated successfully")
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                }
+            )
+        }
+    }
+
+    fun updateGroup(ticketId: Int, groupId: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdating = true, showGroupDialog = false) }
+            getTicketDetailUseCase.updateTicket(ticketId, groupId = groupId).fold(
+                onSuccess = { ticket ->
+                    _uiState.update {
+                        it.copy(ticket = ticket, isUpdating = false,
+                            successMessage = "Ticket updated successfully")
                     }
                 },
                 onFailure = { e ->
@@ -106,6 +131,10 @@ class TicketDetailViewModel @Inject constructor(
 
     fun togglePriorityDialog(show: Boolean) {
         _uiState.update { it.copy(showPriorityDialog = show) }
+    }
+
+    fun toggleGroupDialog(show: Boolean) {
+        _uiState.update { it.copy(showGroupDialog = show) }
     }
 
     fun onReplyTextChange(text: String) {

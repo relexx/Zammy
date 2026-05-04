@@ -12,11 +12,12 @@ class CreateTicketUseCase @Inject constructor(
         body: String,
         groupId: Int,
         priorityId: Int,
-        attachments: List<Pair<String, ByteArray>> = emptyList()
+        attachments: List<Pair<String, ByteArray>> = emptyList(),
+        customer: String? = null
     ): Result<Ticket> {
         if (title.isBlank() || body.isBlank()) {
             return Result.failure(IllegalArgumentException("Title and body are required"))
         }
-        return ticketRepository.createTicket(title, body, groupId, priorityId, attachments)
+        return ticketRepository.createTicket(title, body, groupId, priorityId, attachments, customer)
     }
 }

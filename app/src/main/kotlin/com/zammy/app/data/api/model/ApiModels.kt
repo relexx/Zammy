@@ -84,7 +84,8 @@ data class CreateTicketRequest(
 )
 
 data class UpdateTicketRequest(
-    @SerializedName("state_id") val stateId: Int?,
+    @SerializedName("state") val state: String?,
+    @SerializedName("group_id") val groupId: Int?,
     @SerializedName("priority_id") val priorityId: Int?,
     @SerializedName("owner_id") val ownerId: Int?
 )

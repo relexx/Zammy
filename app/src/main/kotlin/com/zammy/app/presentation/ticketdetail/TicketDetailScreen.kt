@@ -108,28 +108,28 @@ fun TicketDetailScreen(
 
     if (uiState.showStatusDialog) {
         val statuses = listOf(
-            1 to stringResource(R.string.status_new),
-            2 to stringResource(R.string.status_open),
-            3 to stringResource(R.string.status_pending_reminder),
-            4 to stringResource(R.string.status_closed),
-            7 to stringResource(R.string.status_pending_close)
+            "new" to stringResource(R.string.status_new),
+            "open" to stringResource(R.string.status_open),
+            "pending reminder" to stringResource(R.string.status_pending_reminder),
+            "pending close" to stringResource(R.string.status_pending_close),
+            "closed" to stringResource(R.string.status_closed)
         )
         AlertDialog(
             onDismissRequest = { viewModel.toggleStatusDialog(false) },
             title = { Text(stringResource(R.string.ticket_detail_change_status)) },
             text = {
                 Column {
-                    statuses.forEach { (id, label) ->
+                    statuses.forEach { (apiName, label) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.updateStatus(ticketId, id) }
+                                .clickable { viewModel.updateStatus(ticketId, apiName) }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = uiState.ticket?.state?.lowercase() == label.lowercase(),
-                                onClick = { viewModel.updateStatus(ticketId, id) }
+                                selected = uiState.ticket?.state?.lowercase() == apiName,
+                                onClick = { viewModel.updateStatus(ticketId, apiName) }
                             )
                             Text(label, modifier = Modifier.padding(start = 8.dp))
                         }
@@ -139,6 +139,38 @@ fun TicketDetailScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { viewModel.toggleStatusDialog(false) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    if (uiState.showGroupDialog && uiState.groups.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleGroupDialog(false) },
+            title = { Text(stringResource(R.string.ticket_detail_change_group)) },
+            text = {
+                Column {
+                    uiState.groups.forEach { group ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.updateGroup(ticketId, group.id) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = uiState.ticket?.group == group.name,
+                                onClick = { viewModel.updateGroup(ticketId, group.id) }
+                            )
+                            Text(group.name, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleGroupDialog(false) }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
@@ -287,7 +319,8 @@ fun TicketDetailScreen(
                         TicketInfoCard(
                             uiState = uiState,
                             onChangeStatus = { viewModel.toggleStatusDialog(true) },
-                            onChangePriority = { viewModel.togglePriorityDialog(true) }
+                            onChangePriority = { viewModel.togglePriorityDialog(true) },
+                            onChangeGroup = { viewModel.toggleGroupDialog(true) }
                         )
                         HorizontalDivider()
                         Text(
@@ -321,7 +354,8 @@ fun TicketDetailScreen(
 fun TicketInfoCard(
     uiState: TicketDetailUiState,
     onChangeStatus: () -> Unit,
-    onChangePriority: () -> Unit
+    onChangePriority: () -> Unit,
+    onChangeGroup: () -> Unit
 ) {
     val ticket = uiState.ticket ?: return
     Card(
@@ -349,7 +383,12 @@ fun TicketInfoCard(
                 isUpdating = uiState.isUpdating,
                 onEdit = onChangePriority
             )
-            InfoRow(label = stringResource(R.string.ticket_detail_group), value = ticket.group)
+            EditableInfoRow(
+                label = stringResource(R.string.ticket_detail_group),
+                value = ticket.group,
+                isUpdating = uiState.isUpdating,
+                onEdit = onChangeGroup
+            )
             InfoRow(label = stringResource(R.string.ticket_detail_created), value = ticket.createdAt)
             InfoRow(label = stringResource(R.string.ticket_detail_updated), value = ticket.updatedAt)
         }
