@@ -4,8 +4,10 @@ import com.zammy.app.data.api.ZammadApiService
 import com.zammy.app.data.api.model.TicketDto
 import com.zammy.app.data.local.dao.TicketDao
 import com.zammy.app.data.local.entity.TicketEntity
+import com.zammy.app.domain.repository.SettingsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -19,13 +21,17 @@ class TicketRepositoryTest {
 
     private lateinit var api: ZammadApiService
     private lateinit var ticketDao: TicketDao
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var repository: TicketRepositoryImpl
 
     @Before
     fun setup() {
         api = mockk()
         ticketDao = mockk(relaxed = true)
-        repository = TicketRepositoryImpl(api, ticketDao)
+        settingsRepository = mockk<SettingsRepository>().also {
+            every { it.getUsername() } returns "test@example.com"
+        }
+        repository = TicketRepositoryImpl(api, ticketDao, settingsRepository)
     }
 
     @Test

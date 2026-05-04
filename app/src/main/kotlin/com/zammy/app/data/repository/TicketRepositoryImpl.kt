@@ -11,16 +11,20 @@ import com.zammy.app.data.local.entity.TicketEntity
 import com.zammy.app.domain.model.Article
 import com.zammy.app.domain.model.Attachment
 import com.zammy.app.domain.model.Ticket
+import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.repository.TicketRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
+import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TicketRepositoryImpl @Inject constructor(
     private val api: ZammadApiService,
-    private val ticketDao: TicketDao
+    private val ticketDao: TicketDao,
+    private val settingsRepository: SettingsRepository
 ) : TicketRepository {
 
     override fun getTickets(state: String?): Flow<List<Ticket>> {
@@ -109,15 +113,20 @@ class TicketRepositoryImpl @Inject constructor(
             title = title,
             groupId = groupId,
             priorityId = priorityId,
+            customer = settingsRepository.getUsername().takeIf { it.isNotBlank() },
             article = ArticleRequest(
                 subject = title,
                 body = body,
                 attachments = encodedAttachments
             )
         )
-        api.createTicket(request).toEntity().also { entity ->
-            ticketDao.insertTicket(entity)
-        }.toDomain()
+        try {
+            api.createTicket(request).toEntity().also { entity ->
+                ticketDao.insertTicket(entity)
+            }.toDomain()
+        } catch (e: HttpException) {
+            throw RuntimeException(e.zammadError(), e)
+        }
     }
 
     override suspend fun updateTicket(
@@ -233,4 +242,17 @@ class TicketRepositoryImpl @Inject constructor(
         articleCount = articleCount,
         note = note
     )
+}
+
+private fun HttpException.zammadError(): String {
+    val body = response()?.errorBody()?.string()
+    if (!body.isNullOrBlank()) {
+        runCatching {
+            val json = JSONObject(body)
+            return json.optString("error").takeIf { it.isNotBlank() }
+                ?: json.optString("error_human").takeIf { it.isNotBlank() }
+                ?: body
+        }
+    }
+    return "HTTP ${code()} ${message()}"
 }

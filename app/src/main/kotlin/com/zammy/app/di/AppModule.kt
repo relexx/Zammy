@@ -124,8 +124,9 @@ object AppModule {
     @Singleton
     fun provideTicketRepository(
         api: ZammadApiService,
-        ticketDao: TicketDao
-    ): TicketRepository = TicketRepositoryImpl(api, ticketDao)
+        ticketDao: TicketDao,
+        settingsRepository: SettingsRepository
+    ): TicketRepository = TicketRepositoryImpl(api, ticketDao, settingsRepository)
 
     @Provides
     @Singleton

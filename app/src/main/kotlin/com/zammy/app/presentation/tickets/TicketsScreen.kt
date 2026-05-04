@@ -39,7 +39,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -166,11 +165,8 @@ fun TicketList(
     LaunchedEffect(pullToRefreshState.isRefreshing) {
         if (pullToRefreshState.isRefreshing) onRefresh()
     }
-    LaunchedEffect(Unit) {
-        snapshotFlow { isRefreshing }
-            .collect { refreshing ->
-                if (!refreshing) pullToRefreshState.endRefresh()
-            }
+    LaunchedEffect(isRefreshing) {
+        if (!isRefreshing) pullToRefreshState.endRefresh()
     }
 
     Box(
@@ -178,18 +174,26 @@ fun TicketList(
             .fillMaxSize()
             .nestedScroll(pullToRefreshState.nestedScrollConnection)
     ) {
-        if (tickets.isEmpty() && !isRefreshing) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.tickets_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        when {
+            isRefreshing && tickets.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(tickets, key = { it.id }) { ticket ->
-                    TicketItem(ticket = ticket, onClick = { onTicketClick(ticket.id) })
+            tickets.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.tickets_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(tickets, key = { it.id }) { ticket ->
+                        TicketItem(ticket = ticket, onClick = { onTicketClick(ticket.id) })
+                    }
                 }
             }
         }

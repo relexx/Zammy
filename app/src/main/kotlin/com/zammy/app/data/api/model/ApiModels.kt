@@ -79,6 +79,7 @@ data class CreateTicketRequest(
     @SerializedName("title") val title: String,
     @SerializedName("group_id") val groupId: Int,
     @SerializedName("priority_id") val priorityId: Int,
+    @SerializedName("customer") val customer: String?,
     @SerializedName("article") val article: ArticleRequest
 )
 
