@@ -74,10 +74,10 @@ class TicketDetailViewModel @Inject constructor(
         }
     }
 
-    fun updateStatus(ticketId: Int, state: String) {
+    fun updateStatus(ticketId: Int, state: String, pendingTime: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdating = true, showStatusDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, state = state).fold(
+            getTicketDetailUseCase.updateTicket(ticketId, state = state, pendingTime = pendingTime).fold(
                 onSuccess = { ticket ->
                     _uiState.update {
                         it.copy(ticket = ticket, isUpdating = false,

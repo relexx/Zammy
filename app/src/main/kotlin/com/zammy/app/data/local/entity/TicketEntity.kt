@@ -13,6 +13,7 @@ data class TicketEntity(
     val group: String,
     val ownerId: Int?,
     val customerId: Int,
+    val customerName: String? = null,
     val articleCount: Int,
     val note: String?,
     val createdAt: String,

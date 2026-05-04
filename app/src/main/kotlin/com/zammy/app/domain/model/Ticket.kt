@@ -9,6 +9,7 @@ data class Ticket(
     val group: String,
     val ownerId: Int?,
     val customerId: Int,
+    val customerName: String? = null,
     val createdAt: String,
     val updatedAt: String,
     val articleCount: Int = 0,

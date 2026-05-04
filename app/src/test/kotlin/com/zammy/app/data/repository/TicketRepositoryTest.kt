@@ -59,7 +59,7 @@ class TicketRepositoryTest {
             TicketDto(
                 id = 1, number = 1001, title = "Test ticket", state = "open",
                 stateId = 2, priority = "normal", priorityId = 2, group = "Support",
-                groupId = 1, ownerId = null, customerId = 5, articleCount = 2,
+                groupId = 1, ownerId = null, customerId = 5, customer = null, articleCount = 2,
                 note = null, createdAt = "2024-01-01T00:00:00Z", updatedAt = "2024-01-02T00:00:00Z"
             )
         )
@@ -86,7 +86,7 @@ class TicketRepositoryTest {
         val dto = TicketDto(
             id = 42, number = 42, title = "Detail ticket", state = "open",
             stateId = 2, priority = "high", priorityId = 3, group = "Dev",
-            groupId = 2, ownerId = 7, customerId = 5, articleCount = 3,
+            groupId = 2, ownerId = 7, customerId = 5, customer = null, articleCount = 3,
             note = "some note", createdAt = "2024-01-01T00:00:00Z", updatedAt = "2024-01-03T00:00:00Z"
         )
         coEvery { api.getTicket(42, any()) } returns dto

@@ -29,12 +29,15 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -43,24 +46,33 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zammy.app.R
 import com.zammy.app.domain.model.Article
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,12 +120,39 @@ fun TicketDetailScreen(
 
     if (uiState.showStatusDialog) {
         val statuses = listOf(
-            "new" to stringResource(R.string.status_new),
             "open" to stringResource(R.string.status_open),
             "pending reminder" to stringResource(R.string.status_pending_reminder),
             "pending close" to stringResource(R.string.status_pending_close),
             "closed" to stringResource(R.string.status_closed)
         )
+        var selectedStatus by remember { mutableStateOf(uiState.ticket?.state?.lowercase() ?: "open") }
+        var pendingDateMs by remember { mutableLongStateOf(-1L) }
+        var pendingHour by remember { mutableIntStateOf(8) }
+        var pendingMinute by remember { mutableIntStateOf(0) }
+        var showDatePicker by remember { mutableStateOf(false) }
+
+        val isPending = selectedStatus in listOf("pending reminder", "pending close")
+
+        if (showDatePicker) {
+            val datePickerState = rememberDatePickerState()
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingDateMs = datePickerState.selectedDateMillis ?: -1L
+                        showDatePicker = false
+                    }) { Text(stringResource(R.string.action_done)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
+
         AlertDialog(
             onDismissRequest = { viewModel.toggleStatusDialog(false) },
             title = { Text(stringResource(R.string.ticket_detail_change_status)) },
@@ -123,20 +162,75 @@ fun TicketDetailScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.updateStatus(ticketId, apiName) }
+                                .clickable { selectedStatus = apiName }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = uiState.ticket?.state?.lowercase() == apiName,
-                                onClick = { viewModel.updateStatus(ticketId, apiName) }
+                                selected = selectedStatus == apiName,
+                                onClick = { selectedStatus = apiName }
                             )
                             Text(label, modifier = Modifier.padding(start = 8.dp))
                         }
                     }
+                    if (isPending) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.ticket_detail_pending_time),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedButton(
+                            onClick = { showDatePicker = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (pendingDateMs > 0) formatUtcDateMs(pendingDateMs)
+                                else stringResource(R.string.ticket_detail_select_date)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = "%02d".format(pendingHour),
+                                onValueChange = { v ->
+                                    v.toIntOrNull()?.takeIf { it in 0..23 }?.let { pendingHour = it }
+                                },
+                                label = { Text("HH") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = "%02d".format(pendingMinute),
+                                onValueChange = { v ->
+                                    v.toIntOrNull()?.takeIf { it in 0..59 }?.let { pendingMinute = it }
+                                },
+                                label = { Text("MM") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             },
-            confirmButton = {},
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val pendingTime = if (isPending && pendingDateMs > 0) {
+                            buildPendingTimeIso(pendingDateMs, pendingHour, pendingMinute)
+                        } else null
+                        viewModel.updateStatus(ticketId, selectedStatus, pendingTime)
+                    },
+                    enabled = !isPending || pendingDateMs > 0
+                ) {
+                    Text(stringResource(R.string.action_done))
+                }
+            },
             dismissButton = {
                 TextButton(onClick = { viewModel.toggleStatusDialog(false) }) {
                     Text(stringResource(R.string.action_cancel))
@@ -389,6 +483,9 @@ fun TicketInfoCard(
                 isUpdating = uiState.isUpdating,
                 onEdit = onChangeGroup
             )
+            ticket.customerName?.let {
+                InfoRow(label = stringResource(R.string.ticket_detail_customer), value = it)
+            }
             InfoRow(label = stringResource(R.string.ticket_detail_created), value = ticket.createdAt)
             InfoRow(label = stringResource(R.string.ticket_detail_updated), value = ticket.updatedAt)
         }
@@ -567,3 +664,15 @@ private fun getFilenameFromUri(context: android.content.Context, uri: Uri): Stri
         cursor.moveToFirst()
         if (nameIndex >= 0) cursor.getString(nameIndex) else null
     }
+
+private fun formatUtcDateMs(ms: Long): String =
+    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
+        .format(Date(ms))
+
+private fun buildPendingTimeIso(dateMidnightUtcMs: Long, hour: Int, minute: Int): String {
+    val totalMs = dateMidnightUtcMs + (hour * 3600 + minute * 60) * 1000L
+    return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
+        .format(Date(totalMs))
+}

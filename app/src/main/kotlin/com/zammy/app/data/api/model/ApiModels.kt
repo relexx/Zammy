@@ -14,6 +14,7 @@ data class TicketDto(
     @SerializedName("group_id") val groupId: Int,
     @SerializedName("owner_id") val ownerId: Int?,
     @SerializedName("customer_id") val customerId: Int,
+    @SerializedName("customer") val customer: String?,
     @SerializedName("article_count") val articleCount: Int?,
     @SerializedName("note") val note: String?,
     @SerializedName("created_at") val createdAt: String,
@@ -87,7 +88,8 @@ data class UpdateTicketRequest(
     @SerializedName("state") val state: String?,
     @SerializedName("group_id") val groupId: Int?,
     @SerializedName("priority_id") val priorityId: Int?,
-    @SerializedName("owner_id") val ownerId: Int?
+    @SerializedName("owner_id") val ownerId: Int?,
+    @SerializedName("pending_time") val pendingTime: String?
 )
 
 data class SearchResult(

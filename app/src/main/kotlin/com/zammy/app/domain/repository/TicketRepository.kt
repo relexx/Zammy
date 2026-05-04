@@ -22,7 +22,8 @@ interface TicketRepository {
         state: String? = null,
         groupId: Int? = null,
         priorityId: Int? = null,
-        ownerId: Int? = null
+        ownerId: Int? = null,
+        pendingTime: String? = null
     ): Result<Ticket>
     suspend fun addArticle(
         ticketId: Int,

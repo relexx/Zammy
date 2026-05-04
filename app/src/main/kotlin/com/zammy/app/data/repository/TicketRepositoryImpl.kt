@@ -136,16 +136,20 @@ class TicketRepositoryImpl @Inject constructor(
         state: String?,
         groupId: Int?,
         priorityId: Int?,
-        ownerId: Int?
+        ownerId: Int?,
+        pendingTime: String?
     ): Result<Ticket> = runCatching {
         val request = UpdateTicketRequest(
             state = state,
             groupId = groupId,
             priorityId = priorityId,
-            ownerId = ownerId
+            ownerId = ownerId,
+            pendingTime = pendingTime
         )
         try {
-            api.updateTicket(id, request).toEntity().also { entity ->
+            api.updateTicket(id, request)
+            // Re-fetch with expand=true to get correct state/group/priority strings
+            api.getTicket(id, expand = true).toEntity().also { entity ->
                 ticketDao.insertTicket(entity)
             }.toDomain()
         } catch (e: HttpException) {
@@ -169,29 +173,33 @@ class TicketRepositoryImpl @Inject constructor(
         val requestBody: MutableMap<String, Any> = mutableMapOf(
             "ticket_id" to ticketId,
             "body" to body,
-            "type" to "note",
+            "type" to "web",
             "internal" to internal,
             "content_type" to "text/plain"
         )
         if (encodedAttachments.isNotEmpty()) {
             requestBody["attachments"] = encodedAttachments
         }
-        val dto = api.createArticle(requestBody)
-        Article(
-            id = dto.id,
-            ticketId = dto.ticketId,
-            type = dto.type ?: "note",
-            sender = dto.sender ?: "Agent",
-            from = dto.from,
-            to = dto.to,
-            subject = dto.subject,
-            body = dto.body,
-            contentType = dto.contentType ?: "text/plain",
-            internal = dto.internal,
-            createdById = dto.createdById,
-            createdAt = dto.createdAt,
-            updatedAt = dto.updatedAt
-        )
+        try {
+            val dto = api.createArticle(requestBody)
+            Article(
+                id = dto.id,
+                ticketId = dto.ticketId,
+                type = dto.type ?: "web",
+                sender = dto.sender ?: "Agent",
+                from = dto.from,
+                to = dto.to,
+                subject = dto.subject,
+                body = dto.body,
+                contentType = dto.contentType ?: "text/plain",
+                internal = dto.internal,
+                createdById = dto.createdById,
+                createdAt = dto.createdAt,
+                updatedAt = dto.updatedAt
+            )
+        } catch (e: HttpException) {
+            throw RuntimeException(e.zammadError(), e)
+        }
     }
 
     override suspend fun searchTickets(query: String): Result<List<Ticket>> = runCatching {
@@ -205,6 +213,7 @@ class TicketRepositoryImpl @Inject constructor(
                 group = dto.group ?: "unknown",
                 ownerId = dto.ownerId,
                 customerId = dto.customerId,
+                customerName = dto.customer,
                 createdAt = dto.createdAt,
                 updatedAt = dto.updatedAt,
                 articleCount = dto.articleCount ?: 0,
@@ -230,6 +239,7 @@ class TicketRepositoryImpl @Inject constructor(
         group = group ?: "unknown",
         ownerId = ownerId,
         customerId = customerId,
+        customerName = customer,
         articleCount = articleCount ?: 0,
         note = note,
         createdAt = createdAt,
@@ -245,6 +255,7 @@ class TicketRepositoryImpl @Inject constructor(
         group = group,
         ownerId = ownerId,
         customerId = customerId,
+        customerName = customerName,
         createdAt = createdAt,
         updatedAt = updatedAt,
         articleCount = articleCount,

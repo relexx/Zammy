@@ -104,6 +104,9 @@
     <string name="ticket_detail_change_status">Change Status</string>
     <string name="ticket_detail_change_priority">Change Priority</string>
     <string name="ticket_detail_change_group">Change Group</string>
+    <string name="ticket_detail_customer">Customer</string>
+    <string name="ticket_detail_pending_time">Pending Until</string>
+    <string name="ticket_detail_select_date">Select date…</string>
     <string name="create_ticket_customer">Customer (Email)</string>
     <string name="attachment_files_selected">%1$d file(s) attached</string>
 

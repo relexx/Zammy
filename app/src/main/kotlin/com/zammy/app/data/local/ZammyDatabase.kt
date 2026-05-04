@@ -7,7 +7,7 @@ import com.zammy.app.data.local.entity.TicketEntity
 
 @Database(
     entities = [TicketEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ZammyDatabase : RoomDatabase() {
