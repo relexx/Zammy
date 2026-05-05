@@ -2,16 +2,19 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
     branches:
-      - 'release/*'
+      - main
+      - 'release/v*'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g. 1.0.0)'
+      type:
+        description: 'Release type'
         required: true
-        default: '1.0.0'
+        default: 'stable'
+        type: choice
+        options:
+          - stable
+          - nightly
 
 permissions:
   contents: write
@@ -29,6 +32,67 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release metadata
+        id: meta
+        run: |
+          IS_STABLE=false
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.type }}" == "stable" ]]; then
+            IS_STABLE=true
+          fi
+
+          if [ "$IS_STABLE" == "true" ]; then
+            VERSION=$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)"/\1/')
+            TAG="v${VERSION}"
+            echo "type=stable"       >> $GITHUB_OUTPUT
+            echo "prerelease=false"  >> $GITHUB_OUTPUT
+            echo "make_latest=true"  >> $GITHUB_OUTPUT
+          else
+            if [[ "$GITHUB_REF" == refs/heads/release/v* ]]; then
+              BVER="${GITHUB_REF_NAME#release/}"
+            else
+              BVER="v$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)"/\1/')"
+            fi
+            DATE=$(date +%Y%m%d)
+            SHA=$(git rev-parse --short HEAD)
+            TAG="${BVER}-nightly.${DATE}.${SHA}"
+            echo "type=nightly"      >> $GITHUB_OUTPUT
+            echo "prerelease=true"   >> $GITHUB_OUTPUT
+            echo "make_latest=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "tag=${TAG}"          >> $GITHUB_OUTPUT
+          echo "name=Zammy ${TAG}"   >> $GITHUB_OUTPUT
+
+      - name: Create and push stable tag
+        if: steps.meta.outputs.type == 'stable'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.meta.outputs.tag }}"
+          git push origin "${{ steps.meta.outputs.tag }}"
+
+      - name: Generate changelog
+        run: |
+          TYPE="${{ steps.meta.outputs.type }}"
+          if [ "$TYPE" == "stable" ]; then
+            # The just-created tag is first; the previous stable is second
+            LAST=$(git tag -l --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+          else
+            # Latest stable tag
+            LAST=$(git tag -l --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          fi
+
+          if [ -z "$LAST" ]; then
+            COMMITS=$(git log --no-merges --pretty="- %s")
+            echo -e "## Changes\n\n${COMMITS}" > changelog.txt
+          else
+            COMMITS=$(git log "${LAST}..HEAD" --no-merges --pretty="- %s")
+            echo -e "## Changes since ${LAST}\n\n${COMMITS}" > changelog.txt
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -57,51 +121,19 @@ jobs:
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/zammy-release.jks
 
-      - name: Determine version tag
-        id: version
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-            echo "name=Zammy ${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          elif [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
-            VERSION="${GITHUB_REF_NAME#release/}"
-            echo "tag=${VERSION}" >> $GITHUB_OUTPUT
-            echo "name=Zammy ${VERSION}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            echo "name=Zammy v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Rename APK
         run: |
-          VERSION=${{ steps.version.outputs.tag }}
+          TAG="${{ steps.meta.outputs.tag }}"
           mv app/build/outputs/apk/release/app-release.apk \
-             "app/build/outputs/apk/release/zammy-${VERSION}.apk"
+             "app/build/outputs/apk/release/zammy-${TAG}.apk"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.name }}
-          files: app/build/outputs/apk/release/zammy-${{ steps.version.outputs.tag }}.apk
-          body: |
-            ## ${{ steps.version.outputs.name }}
-
-            A full-featured Android client for self-hosted Zammad (v6/v7) helpdesk instances.
-
-            ### What's new in 1.0
-            - Ticket management: Open / Pending / Closed tabs with live search
-            - Ticket detail: view article timeline, reply with attachments
-            - Status and priority editing directly from the ticket detail screen
-            - Create tickets with group selection, priority, and file attachments
-            - Background sync via WorkManager with configurable interval (15/30/60 min)
-            - Push notifications for new tickets and updates with deep-link to ticket
-            - Trust-all-certificates option for self-signed CAs
-            - Full English and German localisation
-
-            ### Installation
-            Download `zammy-${{ steps.version.outputs.tag }}.apk`, enable **Install from unknown sources** and install.
-
-            > Requires Android 8.0 (API 26) or higher.
-          draft: false
-          prerelease: false
+          tag_name:    ${{ steps.meta.outputs.tag }}
+          name:        ${{ steps.meta.outputs.name }}
+          prerelease:  ${{ steps.meta.outputs.prerelease }}
+          make_latest: ${{ steps.meta.outputs.make_latest }}
+          body_path:   changelog.txt
+          files:       app/build/outputs/apk/release/zammy-${{ steps.meta.outputs.tag }}.apk
+          draft:       false
