@@ -1,8 +1,9 @@
 package com.zammy.app.presentation.createticket
 
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.zammy.app.util.MAX_ATTACHMENT_BYTES
+import com.zammy.app.util.getFilenameFromUri
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -81,7 +82,9 @@ fun CreateTicketScreen(
             try {
                 val filename = getFilenameFromUri(context, uri)
                 val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (filename != null && bytes != null) Pair(filename, bytes) else null
+                if (filename != null && bytes != null && bytes.size <= MAX_ATTACHMENT_BYTES)
+                    Pair(filename, bytes)
+                else null
             } catch (e: Exception) {
                 null
             }
@@ -231,9 +234,3 @@ fun CreateTicketScreen(
     }
 }
 
-private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =
-    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        cursor.moveToFirst()
-        if (nameIndex >= 0) cursor.getString(nameIndex) else null
-    }

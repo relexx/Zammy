@@ -11,6 +11,7 @@ import com.zammy.app.data.local.dao.TicketDao
 import com.zammy.app.data.local.entity.TicketEntity
 import com.zammy.app.domain.model.Article
 import com.zammy.app.domain.model.Attachment
+import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.repository.TicketRepository
@@ -219,6 +220,12 @@ class TicketRepositoryImpl @Inject constructor(
                 note = dto.note
             )
         }
+    }
+
+    override suspend fun getGroups(): Result<List<Group>> = runCatching {
+        api.getGroups()
+            .filter { it.active != false }
+            .map { Group(id = it.id, name = it.name) }
     }
 
     override suspend fun getTags(ticketId: Int): Result<List<String>> = runCatching {

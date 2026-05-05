@@ -2,9 +2,8 @@ package com.zammy.app.presentation.ticketdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zammy.app.data.api.ZammadApiService
-import com.zammy.app.data.api.model.GroupDto
 import com.zammy.app.domain.model.Article
+import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.usecase.AddCommentUseCase
 import com.zammy.app.domain.usecase.GetTicketDetailUseCase
@@ -19,7 +18,7 @@ import javax.inject.Inject
 data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val articles: List<Article> = emptyList(),
-    val groups: List<GroupDto> = emptyList(),
+    val groups: List<Group> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
@@ -40,8 +39,7 @@ data class TicketDetailUiState(
 @HiltViewModel
 class TicketDetailViewModel @Inject constructor(
     private val getTicketDetailUseCase: GetTicketDetailUseCase,
-    private val addCommentUseCase: AddCommentUseCase,
-    private val api: ZammadApiService
+    private val addCommentUseCase: AddCommentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
@@ -55,7 +53,7 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(ticket = ticket, isLoading = false) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
             getTicketDetailUseCase.getArticles(ticketId).fold(
@@ -63,7 +61,7 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(articles = articles) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") }
                 }
             )
             loadGroups()
@@ -86,8 +84,8 @@ class TicketDetailViewModel @Inject constructor(
 
     private fun loadGroups() {
         viewModelScope.launch {
-            runCatching { api.getGroups() }.onSuccess { groups ->
-                _uiState.update { it.copy(groups = groups.filter { g -> g.active != false }) }
+            getTicketDetailUseCase.getGroups().onSuccess { groups ->
+                _uiState.update { it.copy(groups = groups) }
             }
         }
     }
@@ -103,7 +101,7 @@ class TicketDetailViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -120,7 +118,7 @@ class TicketDetailViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -137,7 +135,7 @@ class TicketDetailViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -170,7 +168,7 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(tags = it.tags + tag, showTagDialog = false) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message, showTagDialog = false) }
+                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler", showTagDialog = false) }
                 }
             )
         }
@@ -183,7 +181,7 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(tags = it.tags - tag) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -200,7 +198,7 @@ class TicketDetailViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message) }
+                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -239,7 +237,7 @@ class TicketDetailViewModel @Inject constructor(
                 },
                 onFailure = { e ->
                     _uiState.update {
-                        it.copy(isSubmittingReply = false, error = e.message)
+                        it.copy(isSubmittingReply = false, error = e.message ?: "Unbekannter Fehler")
                     }
                 }
             )

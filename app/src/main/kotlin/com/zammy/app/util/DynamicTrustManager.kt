@@ -16,7 +16,8 @@ class DynamicTrustManager @Inject constructor(
     private val systemTrustManager: X509TrustManager by lazy {
         val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
         factory.init(null as KeyStore?)
-        factory.trustManagers.filterIsInstance<X509TrustManager>().first()
+        factory.trustManagers.filterIsInstance<X509TrustManager>().firstOrNull()
+            ?: throw IllegalStateException("No X509TrustManager found in trust factory")
     }
 
     override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {

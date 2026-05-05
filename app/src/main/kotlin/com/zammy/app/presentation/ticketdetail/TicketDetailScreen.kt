@@ -2,7 +2,6 @@ package com.zammy.app.presentation.ticketdetail
 
 import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -77,6 +76,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zammy.app.R
 import com.zammy.app.domain.model.Article
+import com.zammy.app.util.MAX_ATTACHMENT_BYTES
+import com.zammy.app.util.getFilenameFromUri
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -118,7 +119,9 @@ fun TicketDetailScreen(
             try {
                 val filename = getFilenameFromUri(context, uri)
                 val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (filename != null && bytes != null) Pair(filename, bytes) else null
+                if (filename != null && bytes != null && bytes.size <= MAX_ATTACHMENT_BYTES)
+                    Pair(filename, bytes)
+                else null
             } catch (e: Exception) {
                 null
             }
@@ -509,7 +512,7 @@ fun TicketDetailScreen(
                         )
                         HorizontalDivider()
                         Text(
-                            text = "Timeline",
+                            text = stringResource(R.string.ticket_detail_timeline),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -681,7 +684,7 @@ fun ArticleItem(article: Article) {
                 )
                 if (isInternal) {
                     Text(
-                        text = "Internal",
+                        text = stringResource(R.string.article_internal_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -749,8 +752,11 @@ a{color:$linkColorHex}
                         view: WebView,
                         request: WebResourceRequest
                     ): Boolean {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                        val scheme = request.url.scheme?.lowercase()
+                        if (scheme == "http" || scheme == "https") {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                            }
                         }
                         return true
                     }
@@ -758,6 +764,7 @@ a{color:$linkColorHex}
                 loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
             }
         },
+        onRelease = { webView -> webView.destroy() },
         modifier = modifier.fillMaxWidth().height(heightDp)
     )
 }
@@ -808,13 +815,6 @@ private fun TagsRow(
         }
     }
 }
-
-private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =
-    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        cursor.moveToFirst()
-        if (nameIndex >= 0) cursor.getString(nameIndex) else null
-    }
 
 private fun formatUtcDateMs(ms: Long): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

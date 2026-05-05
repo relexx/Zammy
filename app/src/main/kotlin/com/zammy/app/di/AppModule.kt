@@ -70,7 +70,7 @@ object AppModule {
         dynamicTrustManager: DynamicTrustManager
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.HEADERS
                     else HttpLoggingInterceptor.Level.NONE
         }
 

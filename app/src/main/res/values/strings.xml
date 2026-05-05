@@ -114,6 +114,10 @@
     <string name="create_ticket_customer">Kunde (E-Mail)</string>
     <string name="attachment_files_selected">%1$d file(s) attached</string>
 
+    <!-- Ticket Detail - Timeline -->
+    <string name="ticket_detail_timeline">Timeline</string>
+    <string name="article_internal_label">Internal</string>
+
     <!-- Common -->
     <string name="action_retry">Retry</string>
     <string name="action_cancel">Cancel</string>

@@ -45,21 +45,21 @@ class TicketsViewModel @Inject constructor(
     private fun observeTickets() {
         viewModelScope.launch {
             getTicketsUseCase("open")
-                .catch { e -> _uiState.update { it.copy(error = e.message) } }
+                .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") } }
                 .collect { tickets ->
                     _uiState.update { it.copy(openTickets = tickets) }
                 }
         }
         viewModelScope.launch {
             getTicketsUseCase("pending")
-                .catch { e -> _uiState.update { it.copy(error = e.message) } }
+                .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") } }
                 .collect { tickets ->
                     _uiState.update { it.copy(pendingTickets = tickets) }
                 }
         }
         viewModelScope.launch {
             getTicketsUseCase("closed")
-                .catch { e -> _uiState.update { it.copy(error = e.message) } }
+                .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") } }
                 .collect { tickets ->
                     _uiState.update { it.copy(closedTickets = tickets) }
                 }
@@ -73,7 +73,7 @@ class TicketsViewModel @Inject constructor(
                 onSuccess = { _uiState.update { it.copy(isRefreshing = false) } },
                 onFailure = { e ->
                     _uiState.update {
-                        it.copy(isRefreshing = false, error = e.message)
+                        it.copy(isRefreshing = false, error = e.message ?: "Unbekannter Fehler")
                     }
                 }
             )
@@ -94,7 +94,7 @@ class TicketsViewModel @Inject constructor(
                     _uiState.update { it.copy(searchResults = results) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }

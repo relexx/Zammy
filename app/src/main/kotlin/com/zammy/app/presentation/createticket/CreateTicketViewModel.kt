@@ -2,10 +2,10 @@ package com.zammy.app.presentation.createticket
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zammy.app.data.api.ZammadApiService
-import com.zammy.app.data.api.model.GroupDto
+import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.usecase.CreateTicketUseCase
+import com.zammy.app.domain.usecase.GetGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ data class CreateTicketUiState(
     val title: String = "",
     val body: String = "",
     val customerEmail: String = "",
-    val groups: List<GroupDto> = emptyList(),
+    val groups: List<Group> = emptyList(),
     val selectedGroupId: Int? = null,
     val selectedPriorityId: Int = 2,
     val attachments: List<Pair<String, ByteArray>> = emptyList(),
@@ -31,7 +31,7 @@ data class CreateTicketUiState(
 @HiltViewModel
 class CreateTicketViewModel @Inject constructor(
     private val createTicketUseCase: CreateTicketUseCase,
-    private val api: ZammadApiService
+    private val getGroupsUseCase: GetGroupsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateTicketUiState())
@@ -44,19 +44,18 @@ class CreateTicketViewModel @Inject constructor(
     private fun loadGroups() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            runCatching { api.getGroups() }.fold(
+            getGroupsUseCase().fold(
                 onSuccess = { groups ->
-                    val activeGroups = groups.filter { g -> g.active != false }
                     _uiState.update {
                         it.copy(
-                            groups = activeGroups,
-                            selectedGroupId = activeGroups.firstOrNull()?.id,
+                            groups = groups,
+                            selectedGroupId = groups.firstOrNull()?.id,
                             isLoading = false
                         )
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
@@ -111,7 +110,7 @@ class CreateTicketViewModel @Inject constructor(
                     _uiState.update { it.copy(isSubmitting = false, createdTicket = ticket) }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(isSubmitting = false, error = e.message) }
+                    _uiState.update { it.copy(isSubmitting = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }

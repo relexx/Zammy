@@ -1,6 +1,7 @@
 package com.zammy.app.domain.usecase
 
 import com.zammy.app.domain.model.Article
+import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.repository.TicketRepository
 import javax.inject.Inject
@@ -15,6 +16,8 @@ class GetTicketDetailUseCase @Inject constructor(
     suspend fun getArticles(ticketId: Int): Result<List<Article>> {
         return ticketRepository.getArticles(ticketId)
     }
+
+    suspend fun getGroups(): Result<List<Group>> = ticketRepository.getGroups()
 
     suspend fun getTags(ticketId: Int) = ticketRepository.getTags(ticketId)
     suspend fun getTagList() = ticketRepository.getTagList()

@@ -1,6 +1,7 @@
 package com.zammy.app.domain.repository
 
 import com.zammy.app.domain.model.Article
+import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import kotlinx.coroutines.flow.Flow
 
@@ -33,6 +34,7 @@ interface TicketRepository {
         attachments: List<Pair<String, ByteArray>> = emptyList()
     ): Result<Article>
     suspend fun searchTickets(query: String): Result<List<Ticket>>
+    suspend fun getGroups(): Result<List<Group>>
     suspend fun getTags(ticketId: Int): Result<List<String>>
     suspend fun getTagList(): Result<List<String>>
     suspend fun addTag(ticketId: Int, tag: String): Result<Unit>
