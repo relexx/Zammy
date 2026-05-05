@@ -31,6 +31,9 @@ data class TicketDetailUiState(
     val showPriorityDialog: Boolean = false,
     val showGroupDialog: Boolean = false,
     val showCustomerDialog: Boolean = false,
+    val showTagDialog: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val availableTags: List<String> = emptyList(),
     val isUpdating: Boolean = false
 )
 
@@ -64,6 +67,20 @@ class TicketDetailViewModel @Inject constructor(
                 }
             )
             loadGroups()
+            loadTags(ticketId)
+        }
+    }
+
+    private fun loadTags(ticketId: Int) {
+        viewModelScope.launch {
+            getTicketDetailUseCase.getTags(ticketId).onSuccess { tags ->
+                _uiState.update { it.copy(tags = tags) }
+            }
+        }
+        viewModelScope.launch {
+            getTicketDetailUseCase.getTagList().onSuccess { available ->
+                _uiState.update { it.copy(availableTags = available) }
+            }
         }
     }
 
@@ -140,6 +157,36 @@ class TicketDetailViewModel @Inject constructor(
 
     fun toggleCustomerDialog(show: Boolean) {
         _uiState.update { it.copy(showCustomerDialog = show) }
+    }
+
+    fun toggleTagDialog(show: Boolean) {
+        _uiState.update { it.copy(showTagDialog = show) }
+    }
+
+    fun addTag(ticketId: Int, tag: String) {
+        viewModelScope.launch {
+            getTicketDetailUseCase.addTag(ticketId, tag).fold(
+                onSuccess = {
+                    _uiState.update { it.copy(tags = it.tags + tag, showTagDialog = false) }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(error = e.message, showTagDialog = false) }
+                }
+            )
+        }
+    }
+
+    fun removeTag(ticketId: Int, tag: String) {
+        viewModelScope.launch {
+            getTicketDetailUseCase.removeTag(ticketId, tag).fold(
+                onSuccess = {
+                    _uiState.update { it.copy(tags = it.tags - tag) }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+            )
+        }
     }
 
     fun updateCustomer(ticketId: Int, customer: String) {

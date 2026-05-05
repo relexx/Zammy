@@ -5,11 +5,15 @@ import com.zammy.app.data.api.model.ArticleCreateRequest
 import com.zammy.app.data.api.model.ArticleRequest
 import com.zammy.app.data.api.model.CreateTicketRequest
 import com.zammy.app.data.api.model.GroupDto
+import com.zammy.app.data.api.model.TagItemDto
+import com.zammy.app.data.api.model.TagRequest
+import com.zammy.app.data.api.model.TagsResponse
 import com.zammy.app.data.api.model.TicketDto
 import com.zammy.app.data.api.model.UpdateTicketRequest
 import com.zammy.app.data.api.model.UserDto
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -70,4 +74,19 @@ interface ZammadApiService {
         @Query("limit") limit: Int = 20,
         @Query("expand") expand: Boolean = true
     ): List<TicketDto>
+
+    @GET("api/v1/tags")
+    suspend fun getTags(
+        @Query("object") objectType: String = "Ticket",
+        @Query("o_id") oId: Int
+    ): TagsResponse
+
+    @GET("api/v1/tag_list")
+    suspend fun getTagList(): List<TagItemDto>
+
+    @POST("api/v1/tags")
+    suspend fun addTag(@Body request: TagRequest)
+
+    @HTTP(method = "DELETE", path = "api/v1/tags", hasBody = true)
+    suspend fun removeTag(@Body request: TagRequest)
 }

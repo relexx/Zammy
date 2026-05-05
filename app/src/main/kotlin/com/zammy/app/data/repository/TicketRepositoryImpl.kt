@@ -221,6 +221,22 @@ class TicketRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTags(ticketId: Int): Result<List<String>> = runCatching {
+        api.getTags(oId = ticketId).tags
+    }
+
+    override suspend fun getTagList(): Result<List<String>> = runCatching {
+        api.getTagList().map { it.name }
+    }
+
+    override suspend fun addTag(ticketId: Int, tag: String): Result<Unit> = runCatching {
+        api.addTag(com.zammy.app.data.api.model.TagRequest(oId = ticketId, item = tag))
+    }
+
+    override suspend fun removeTag(ticketId: Int, tag: String): Result<Unit> = runCatching {
+        api.removeTag(com.zammy.app.data.api.model.TagRequest(oId = ticketId, item = tag))
+    }
+
     private fun guessMimeType(filename: String): String = when {
         filename.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
         filename.endsWith(".png", ignoreCase = true) -> "image/png"

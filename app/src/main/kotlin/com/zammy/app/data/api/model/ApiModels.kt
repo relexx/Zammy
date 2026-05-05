@@ -102,6 +102,21 @@ data class UpdateTicketRequest(
     @SerializedName("customer") val customer: String?
 )
 
+data class TagsResponse(
+    @SerializedName("tags") val tags: List<String>
+)
+
+data class TagItemDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("name") val name: String
+)
+
+data class TagRequest(
+    @SerializedName("object") val objectType: String = "Ticket",
+    @SerializedName("o_id") val oId: Int,
+    @SerializedName("item") val item: String
+)
+
 data class SearchResult(
     @SerializedName("ticket") val tickets: List<TicketDto>?,
     @SerializedName("query") val query: String?

@@ -16,6 +16,11 @@ class GetTicketDetailUseCase @Inject constructor(
         return ticketRepository.getArticles(ticketId)
     }
 
+    suspend fun getTags(ticketId: Int) = ticketRepository.getTags(ticketId)
+    suspend fun getTagList() = ticketRepository.getTagList()
+    suspend fun addTag(ticketId: Int, tag: String) = ticketRepository.addTag(ticketId, tag)
+    suspend fun removeTag(ticketId: Int, tag: String) = ticketRepository.removeTag(ticketId, tag)
+
     suspend fun updateTicket(
         id: Int,
         state: String? = null,

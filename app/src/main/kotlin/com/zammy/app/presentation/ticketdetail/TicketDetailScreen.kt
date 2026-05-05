@@ -18,14 +18,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +41,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -47,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.unit.Dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,7 +82,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TicketDetailScreen(
     ticketId: Int,
@@ -301,6 +309,56 @@ fun TicketDetailScreen(
         )
     }
 
+    if (uiState.showTagDialog) {
+        var tagInput by remember { mutableStateOf("") }
+        val suggestions = remember(tagInput, uiState.availableTags, uiState.tags) {
+            uiState.availableTags
+                .filter { it.contains(tagInput, ignoreCase = true) && it !in uiState.tags }
+                .take(6)
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleTagDialog(false) },
+            title = { Text(stringResource(R.string.ticket_detail_add_tag)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = tagInput,
+                        onValueChange = { tagInput = it },
+                        label = { Text(stringResource(R.string.ticket_detail_tag_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    if (suggestions.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        suggestions.forEach { suggestion ->
+                            Text(
+                                text = suggestion,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { tagInput = suggestion }
+                                    .padding(vertical = 6.dp, horizontal = 4.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.addTag(ticketId, tagInput.trim()) },
+                    enabled = tagInput.isNotBlank()
+                ) {
+                    Text(stringResource(R.string.action_done))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleTagDialog(false) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (uiState.showPriorityDialog) {
         val priorities = listOf(
             1 to stringResource(R.string.priority_low),
@@ -445,7 +503,9 @@ fun TicketDetailScreen(
                             onChangeStatus = { viewModel.toggleStatusDialog(true) },
                             onChangePriority = { viewModel.togglePriorityDialog(true) },
                             onChangeGroup = { viewModel.toggleGroupDialog(true) },
-                            onChangeCustomer = { viewModel.toggleCustomerDialog(true) }
+                            onChangeCustomer = { viewModel.toggleCustomerDialog(true) },
+                            onAddTag = { viewModel.toggleTagDialog(true) },
+                            onRemoveTag = { tag -> viewModel.removeTag(ticketId, tag) }
                         )
                         HorizontalDivider()
                         Text(
@@ -475,13 +535,16 @@ fun TicketDetailScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TicketInfoCard(
     uiState: TicketDetailUiState,
     onChangeStatus: () -> Unit,
     onChangePriority: () -> Unit,
     onChangeGroup: () -> Unit,
-    onChangeCustomer: () -> Unit
+    onChangeCustomer: () -> Unit,
+    onAddTag: () -> Unit,
+    onRemoveTag: (String) -> Unit
 ) {
     val ticket = uiState.ticket ?: return
     Card(
@@ -520,6 +583,12 @@ fun TicketInfoCard(
                 value = ticket.customerName ?: "-",
                 isUpdating = uiState.isUpdating,
                 onEdit = onChangeCustomer
+            )
+            TagsRow(
+                label = stringResource(R.string.ticket_detail_tags),
+                tags = uiState.tags,
+                onAddTag = onAddTag,
+                onRemoveTag = onRemoveTag
             )
             InfoRow(label = stringResource(R.string.ticket_detail_created), value = ticket.createdAt)
             InfoRow(label = stringResource(R.string.ticket_detail_updated), value = ticket.updatedAt)
@@ -691,6 +760,53 @@ a{color:$linkColorHex}
         },
         modifier = modifier.fillMaxWidth().height(heightDp)
     )
+}
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun TagsRow(
+    label: String,
+    tags: List<String>,
+    onAddTag: () -> Unit,
+    onRemoveTag: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp, end = 8.dp)
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            tags.forEach { tag ->
+                InputChip(
+                    selected = false,
+                    onClick = { onRemoveTag(tag) },
+                    label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(InputChipDefaults.IconSize)
+                        )
+                    }
+                )
+            }
+            AssistChip(
+                onClick = onAddTag,
+                label = { Text("+") }
+            )
+        }
+    }
 }
 
 private fun getFilenameFromUri(context: android.content.Context, uri: Uri): String? =

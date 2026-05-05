@@ -33,4 +33,8 @@ interface TicketRepository {
         attachments: List<Pair<String, ByteArray>> = emptyList()
     ): Result<Article>
     suspend fun searchTickets(query: String): Result<List<Ticket>>
+    suspend fun getTags(ticketId: Int): Result<List<String>>
+    suspend fun getTagList(): Result<List<String>>
+    suspend fun addTag(ticketId: Int, tag: String): Result<Unit>
+    suspend fun removeTag(ticketId: Int, tag: String): Result<Unit>
 }
