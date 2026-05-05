@@ -84,9 +84,9 @@ interface ZammadApiService {
     @GET("api/v1/tag_list")
     suspend fun getTagList(): List<TagItemDto>
 
-    @POST("api/v1/tags")
+    @POST("api/v1/tags/add")
     suspend fun addTag(@Body request: TagRequest)
 
-    @HTTP(method = "DELETE", path = "api/v1/tags", hasBody = true)
+    @HTTP(method = "DELETE", path = "api/v1/tags/remove", hasBody = true)
     suspend fun removeTag(@Body request: TagRequest)
 }
