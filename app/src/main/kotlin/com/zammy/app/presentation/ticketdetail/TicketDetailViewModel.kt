@@ -3,7 +3,6 @@ package com.zammy.app.presentation.ticketdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zammy.app.domain.model.Article
-import com.zammy.app.domain.model.Group
 import com.zammy.app.domain.model.Ticket
 import com.zammy.app.domain.usecase.AddCommentUseCase
 import com.zammy.app.domain.usecase.GetTicketDetailUseCase
@@ -18,22 +17,16 @@ import javax.inject.Inject
 data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val articles: List<Article> = emptyList(),
-    val groups: List<Group> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
     val replyText: String = "",
     val replyAttachments: List<Pair<String, ByteArray>> = emptyList(),
     val isSubmittingReply: Boolean = false,
-    val showReplyDialog: Boolean = false,
-    val showStatusDialog: Boolean = false,
-    val showPriorityDialog: Boolean = false,
-    val showGroupDialog: Boolean = false,
-    val showCustomerDialog: Boolean = false,
-    val showTagDialog: Boolean = false,
+    val isReplyInternal: Boolean = false,
     val tags: List<String> = emptyList(),
     val availableTags: List<String> = emptyList(),
-    val isUpdating: Boolean = false
+    val tagInput: String = ""
 )
 
 @HiltViewModel
@@ -64,8 +57,15 @@ class TicketDetailViewModel @Inject constructor(
                     _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") }
                 }
             )
-            loadGroups()
             loadTags(ticketId)
+        }
+    }
+
+    fun reloadTicket(ticketId: Int) {
+        viewModelScope.launch {
+            getTicketDetailUseCase.getTicket(ticketId).onSuccess { ticket ->
+                _uiState.update { it.copy(ticket = ticket) }
+            }
         }
     }
 
@@ -74,102 +74,27 @@ class TicketDetailViewModel @Inject constructor(
             getTicketDetailUseCase.getTags(ticketId).onSuccess { tags ->
                 _uiState.update { it.copy(tags = tags) }
             }
-        }
-        viewModelScope.launch {
             getTicketDetailUseCase.getTagList().onSuccess { available ->
                 _uiState.update { it.copy(availableTags = available) }
             }
         }
     }
 
-    private fun loadGroups() {
-        viewModelScope.launch {
-            getTicketDetailUseCase.getGroups().onSuccess { groups ->
-                _uiState.update { it.copy(groups = groups) }
-            }
-        }
-    }
+    fun onReplyTextChange(text: String) = _uiState.update { it.copy(replyText = text) }
 
-    fun updateStatus(ticketId: Int, state: String, pendingTime: String? = null) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, showStatusDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, state = state, pendingTime = pendingTime).fold(
-                onSuccess = { ticket ->
-                    _uiState.update {
-                        it.copy(ticket = ticket, isUpdating = false,
-                            successMessage = "Ticket updated successfully")
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
-                }
-            )
-        }
-    }
+    fun toggleReplyInternal() = _uiState.update { it.copy(isReplyInternal = !it.isReplyInternal) }
 
-    fun updatePriority(ticketId: Int, priorityId: Int) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, showPriorityDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, priorityId = priorityId).fold(
-                onSuccess = { ticket ->
-                    _uiState.update {
-                        it.copy(ticket = ticket, isUpdating = false,
-                            successMessage = "Ticket updated successfully")
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
-                }
-            )
-        }
-    }
+    fun onReplyAttachmentsChange(attachments: List<Pair<String, ByteArray>>) =
+        _uiState.update { it.copy(replyAttachments = attachments) }
 
-    fun updateGroup(ticketId: Int, groupId: Int) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, showGroupDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, groupId = groupId).fold(
-                onSuccess = { ticket ->
-                    _uiState.update {
-                        it.copy(ticket = ticket, isUpdating = false,
-                            successMessage = "Ticket updated successfully")
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
-                }
-            )
-        }
-    }
-
-    fun toggleStatusDialog(show: Boolean) {
-        _uiState.update { it.copy(showStatusDialog = show) }
-    }
-
-    fun togglePriorityDialog(show: Boolean) {
-        _uiState.update { it.copy(showPriorityDialog = show) }
-    }
-
-    fun toggleGroupDialog(show: Boolean) {
-        _uiState.update { it.copy(showGroupDialog = show) }
-    }
-
-    fun toggleCustomerDialog(show: Boolean) {
-        _uiState.update { it.copy(showCustomerDialog = show) }
-    }
-
-    fun toggleTagDialog(show: Boolean) {
-        _uiState.update { it.copy(showTagDialog = show) }
-    }
+    fun onTagInputChange(input: String) = _uiState.update { it.copy(tagInput = input) }
 
     fun addTag(ticketId: Int, tag: String) {
+        if (tag.isBlank()) return
         viewModelScope.launch {
             getTicketDetailUseCase.addTag(ticketId, tag).fold(
-                onSuccess = {
-                    _uiState.update { it.copy(tags = it.tags + tag, showTagDialog = false) }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler", showTagDialog = false) }
-                }
+                onSuccess = { _uiState.update { it.copy(tags = it.tags + tag, tagInput = "") } },
+                onFailure = { e -> _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") } }
             )
         }
     }
@@ -177,52 +102,23 @@ class TicketDetailViewModel @Inject constructor(
     fun removeTag(ticketId: Int, tag: String) {
         viewModelScope.launch {
             getTicketDetailUseCase.removeTag(ticketId, tag).fold(
-                onSuccess = {
-                    _uiState.update { it.copy(tags = it.tags - tag) }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") }
-                }
+                onSuccess = { _uiState.update { it.copy(tags = it.tags - tag) } },
+                onFailure = { e -> _uiState.update { it.copy(error = e.message ?: "Unbekannter Fehler") } }
             )
         }
-    }
-
-    fun updateCustomer(ticketId: Int, customer: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, showCustomerDialog = false) }
-            getTicketDetailUseCase.updateTicket(ticketId, customer = customer).fold(
-                onSuccess = { ticket ->
-                    _uiState.update {
-                        it.copy(ticket = ticket, isUpdating = false,
-                            successMessage = "Ticket updated successfully")
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(isUpdating = false, error = e.message ?: "Unbekannter Fehler") }
-                }
-            )
-        }
-    }
-
-    fun onReplyTextChange(text: String) {
-        _uiState.update { it.copy(replyText = text) }
-    }
-
-    fun onReplyAttachmentsChange(attachments: List<Pair<String, ByteArray>>) {
-        _uiState.update { it.copy(replyAttachments = attachments) }
-    }
-
-    fun toggleReplyDialog(show: Boolean) {
-        _uiState.update { it.copy(showReplyDialog = show, replyAttachments = emptyList()) }
     }
 
     fun submitReply(ticketId: Int) {
         val state = _uiState.value
         if (state.replyText.isBlank()) return
-
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmittingReply = true) }
-            addCommentUseCase(ticketId, state.replyText, attachments = state.replyAttachments).fold(
+            addCommentUseCase(
+                ticketId = ticketId,
+                body = state.replyText,
+                internal = state.isReplyInternal,
+                attachments = state.replyAttachments
+            ).fold(
                 onSuccess = { article ->
                     _uiState.update { s ->
                         s.copy(
@@ -230,21 +126,17 @@ class TicketDetailViewModel @Inject constructor(
                             replyText = "",
                             replyAttachments = emptyList(),
                             isSubmittingReply = false,
-                            showReplyDialog = false,
-                            successMessage = "Reply sent successfully"
+                            isReplyInternal = false,
+                            successMessage = "Antwort gesendet"
                         )
                     }
                 },
                 onFailure = { e ->
-                    _uiState.update {
-                        it.copy(isSubmittingReply = false, error = e.message ?: "Unbekannter Fehler")
-                    }
+                    _uiState.update { it.copy(isSubmittingReply = false, error = e.message ?: "Unbekannter Fehler") }
                 }
             )
         }
     }
 
-    fun clearMessages() {
-        _uiState.update { it.copy(error = null, successMessage = null) }
-    }
+    fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }
 }

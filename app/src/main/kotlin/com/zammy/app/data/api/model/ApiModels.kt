@@ -94,12 +94,13 @@ data class CreateTicketRequest(
 )
 
 data class UpdateTicketRequest(
-    @SerializedName("state") val state: String?,
-    @SerializedName("group_id") val groupId: Int?,
-    @SerializedName("priority_id") val priorityId: Int?,
-    @SerializedName("owner_id") val ownerId: Int?,
-    @SerializedName("pending_time") val pendingTime: String?,
-    @SerializedName("customer") val customer: String?
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("state") val state: String? = null,
+    @SerializedName("group_id") val groupId: Int? = null,
+    @SerializedName("priority_id") val priorityId: Int? = null,
+    @SerializedName("owner_id") val ownerId: Int? = null,
+    @SerializedName("pending_time") val pendingTime: String? = null,
+    @SerializedName("customer") val customer: String? = null
 )
 
 data class TagsResponse(

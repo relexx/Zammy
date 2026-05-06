@@ -135,6 +135,7 @@ class TicketRepositoryImpl @Inject constructor(
 
     override suspend fun updateTicket(
         id: Int,
+        title: String?,
         state: String?,
         groupId: Int?,
         priorityId: Int?,
@@ -143,6 +144,7 @@ class TicketRepositoryImpl @Inject constructor(
         customer: String?
     ): Result<Ticket> = runCatching {
         val request = UpdateTicketRequest(
+            title = title,
             state = state,
             groupId = groupId,
             priorityId = priorityId,

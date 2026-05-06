@@ -20,6 +20,7 @@ interface TicketRepository {
     ): Result<Ticket>
     suspend fun updateTicket(
         id: Int,
+        title: String? = null,
         state: String? = null,
         groupId: Int? = null,
         priorityId: Int? = null,
