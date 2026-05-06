@@ -4,16 +4,16 @@ on:
   push:
     branches:
       - main
+      - beta
       - 'release/v*'
   workflow_dispatch:
     inputs:
       type:
-        description: 'Release type (stable: nur auf main sinnvoll)'
+        description: 'Release type (nur auf main sinnvoll)'
         required: true
-        default: 'pre-release'
+        default: 'stable'
         type: choice
         options:
-          - pre-release
           - stable
 
 permissions:
@@ -52,10 +52,10 @@ jobs:
             echo "type=stable"       >> $GITHUB_OUTPUT
             echo "prerelease=false"  >> $GITHUB_OUTPUT
             echo "make_latest=true"  >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # Manueller Pre-Release aus beliebigem Branch
-            TAG="v${VERSION}-beta.${SHA}"
-            echo "type=pre-release"  >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/beta" ]]; then
+            DATE=$(date +%Y%m%d)
+            TAG="v${VERSION}-beta.${DATE}.${SHA}"
+            echo "type=beta"         >> $GITHUB_OUTPUT
             echo "prerelease=true"   >> $GITHUB_OUTPUT
             echo "make_latest=false" >> $GITHUB_OUTPUT
           else
