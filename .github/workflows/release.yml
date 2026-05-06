@@ -4,17 +4,17 @@ on:
   push:
     branches:
       - main
+      - beta
       - 'release/v*'
   workflow_dispatch:
     inputs:
       type:
-        description: 'Release type'
+        description: 'Release type (nur auf main sinnvoll)'
         required: true
         default: 'stable'
         type: choice
         options:
           - stable
-          - nightly
 
 permissions:
   contents: write
@@ -38,6 +38,9 @@ jobs:
       - name: Determine release metadata
         id: meta
         run: |
+          VERSION=$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)"/\1/')
+          SHA=$(git rev-parse --short HEAD)
+
           IS_STABLE=false
           if [[ "$GITHUB_REF" == "refs/heads/main" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.type }}" == "stable" ]]; then
@@ -45,19 +48,24 @@ jobs:
           fi
 
           if [ "$IS_STABLE" == "true" ]; then
-            VERSION=$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)"/\1/')
             TAG="v${VERSION}"
             echo "type=stable"       >> $GITHUB_OUTPUT
             echo "prerelease=false"  >> $GITHUB_OUTPUT
             echo "make_latest=true"  >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/beta" ]]; then
+            DATE=$(date +%Y%m%d)
+            TAG="v${VERSION}-beta.${DATE}.${SHA}"
+            echo "type=beta"         >> $GITHUB_OUTPUT
+            echo "prerelease=true"   >> $GITHUB_OUTPUT
+            echo "make_latest=false" >> $GITHUB_OUTPUT
           else
+            # Automatischer Nightly aus release/v*
             if [[ "$GITHUB_REF" == refs/heads/release/v* ]]; then
               BVER="${GITHUB_REF_NAME#release/}"
             else
-              BVER="v$(grep 'versionName = ' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)"/\1/')"
+              BVER="v${VERSION}"
             fi
             DATE=$(date +%Y%m%d)
-            SHA=$(git rev-parse --short HEAD)
             TAG="${BVER}-nightly.${DATE}.${SHA}"
             echo "type=nightly"      >> $GITHUB_OUTPUT
             echo "prerelease=true"   >> $GITHUB_OUTPUT

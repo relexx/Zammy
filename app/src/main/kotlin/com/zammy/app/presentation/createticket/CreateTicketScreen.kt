@@ -2,10 +2,11 @@ package com.zammy.app.presentation.createticket
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import com.zammy.app.util.MAX_ATTACHMENT_BYTES
-import com.zammy.app.util.getFilenameFromUri
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,17 +15,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,12 +46,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zammy.app.R
+import com.zammy.app.util.MAX_ATTACHMENT_BYTES
+import com.zammy.app.util.getFilenameFromUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,9 +70,7 @@ fun CreateTicketScreen(
     var groupExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.createdTicket) {
-        uiState.createdTicket?.let { ticket ->
-            onTicketCreated(ticket.id)
-        }
+        uiState.createdTicket?.let { ticket -> onTicketCreated(ticket.id) }
     }
 
     LaunchedEffect(uiState.error) {
@@ -79,15 +84,13 @@ fun CreateTicketScreen(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         val files = uris.mapNotNull { uri ->
-            try {
-                val filename = getFilenameFromUri(context, uri)
+            runCatching {
+                val filename = getFilenameFromUri(context, uri) ?: return@mapNotNull null
                 val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                if (filename != null && bytes != null && bytes.size <= MAX_ATTACHMENT_BYTES)
-                    Pair(filename, bytes)
-                else null
-            } catch (e: Exception) {
-                null
-            }
+                    ?: return@mapNotNull null
+                if (bytes.size > MAX_ATTACHMENT_BYTES) return@mapNotNull null
+                Pair(filename, bytes)
+            }.getOrNull()
         }
         viewModel.onAttachmentsSelected(files)
     }
@@ -95,7 +98,13 @@ fun CreateTicketScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.create_ticket_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.create_ticket_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -103,34 +112,34 @@ fun CreateTicketScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
                 value = uiState.title,
                 onValueChange = viewModel::onTitleChange,
                 label = { Text(stringResource(R.string.create_ticket_subject)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = uiState.customerEmail,
                 onValueChange = viewModel::onCustomerEmailChange,
                 label = { Text(stringResource(R.string.create_ticket_customer)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = uiState.body,
@@ -139,10 +148,9 @@ fun CreateTicketScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp),
-                maxLines = 8
+                maxLines = 8,
+                shape = RoundedCornerShape(12.dp)
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             if (uiState.groups.isNotEmpty()) {
                 ExposedDropdownMenuBox(
@@ -157,7 +165,8 @@ fun CreateTicketScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = groupExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     ExposedDropdownMenu(
                         expanded = groupExpanded,
@@ -174,34 +183,48 @@ fun CreateTicketScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Text(
                 text = stringResource(R.string.create_ticket_priority),
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val priorities = listOf(
+                listOf(
                     1 to stringResource(R.string.priority_low),
                     2 to stringResource(R.string.priority_normal),
                     3 to stringResource(R.string.priority_high)
-                )
-                priorities.forEach { (id, label) ->
-                    FilterChip(
-                        selected = uiState.selectedPriorityId == id,
-                        onClick = { viewModel.onPrioritySelected(id) },
-                        label = { Text(label) }
-                    )
+                ).forEach { (id, label) ->
+                    val selected = uiState.selectedPriorityId == id
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            .clickable { viewModel.onPrioritySelected(id) }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (selected) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedButton(
                 onClick = { fileLauncher.launch(arrayOf("*/*")) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
                     Icons.Default.AttachFile,
@@ -217,20 +240,32 @@ fun CreateTicketScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = viewModel::submit,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isSubmitting
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = !uiState.isSubmitting,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 if (uiState.isSubmitting) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
                 } else {
-                    Text(stringResource(R.string.create_ticket_submit))
+                    Text(
+                        text = stringResource(R.string.create_ticket_submit),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
     }
 }
-

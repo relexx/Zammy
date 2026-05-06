@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.zammy.app.presentation.createticket.CreateTicketScreen
+import com.zammy.app.presentation.editticket.EditTicketScreen
 import com.zammy.app.presentation.login.LoginScreen
 import com.zammy.app.presentation.settings.SettingsScreen
 import com.zammy.app.presentation.ticketdetail.TicketDetailScreen
@@ -18,6 +19,9 @@ sealed class Screen(val route: String) {
     object Tickets : Screen("tickets")
     object TicketDetail : Screen("ticket_detail/{ticketId}") {
         fun createRoute(ticketId: Int) = "ticket_detail/$ticketId"
+    }
+    object EditTicket : Screen("edit_ticket/{ticketId}") {
+        fun createRoute(ticketId: Int) = "edit_ticket/$ticketId"
     }
     object CreateTicket : Screen("create_ticket")
     object Settings : Screen("settings")
@@ -70,7 +74,22 @@ fun AppNavigation(initialTicketId: Int? = null) {
             val ticketId = backStackEntry.arguments?.getInt("ticketId") ?: return@composable
             TicketDetailScreen(
                 ticketId = ticketId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onEditTicket = { id ->
+                    navController.navigate(Screen.EditTicket.createRoute(id))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditTicket.route,
+            arguments = listOf(navArgument("ticketId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val ticketId = backStackEntry.arguments?.getInt("ticketId") ?: return@composable
+            EditTicketScreen(
+                ticketId = ticketId,
+                onNavigateBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
             )
         }
 

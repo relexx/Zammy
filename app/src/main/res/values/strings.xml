@@ -118,6 +118,19 @@
     <string name="ticket_detail_timeline">Timeline</string>
     <string name="article_internal_label">Internal</string>
 
+    <!-- Edit Ticket Screen -->
+    <string name="edit_ticket_title">Edit Ticket</string>
+    <string name="edit_ticket_save">Save</string>
+    <string name="edit_ticket_subject">Subject</string>
+    <string name="edit_ticket_status">Status</string>
+    <string name="edit_ticket_pending_time">Pending Until</string>
+    <string name="edit_ticket_priority">Priority</string>
+    <string name="edit_ticket_group">Group</string>
+    <string name="edit_ticket_owner">Owner</string>
+    <string name="edit_ticket_tags">Tags</string>
+    <string name="edit_ticket_add_tag">Add Tag</string>
+    <string name="edit_ticket_no_owner">— No Owner —</string>
+
     <!-- Common -->
     <string name="action_retry">Retry</string>
     <string name="action_cancel">Cancel</string>
