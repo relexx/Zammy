@@ -1,5 +1,10 @@
 package com.zammy.app.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
@@ -27,13 +32,19 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
 }
 
+private val SlideAnimationDuration = 350
+
 @Composable
 fun AppNavigation(initialTicketId: Int? = null) {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Login.route,
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(SlideAnimationDuration)) },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(SlideAnimationDuration)) },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(SlideAnimationDuration)) }
     ) {
         composable(Screen.Login.route) {
             LoginScreen(

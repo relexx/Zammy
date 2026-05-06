@@ -78,7 +78,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zammy.app.R
 import com.zammy.app.domain.model.Article
+import com.zammy.app.domain.model.DisplaySettings
 import com.zammy.app.domain.model.Ticket
+import com.zammy.app.ui.components.Avatar
 import com.zammy.app.ui.components.PriorityBadge
 import com.zammy.app.ui.components.StatusBadge
 import com.zammy.app.ui.components.TagChip
@@ -189,9 +191,11 @@ fun TicketDetailScreen(
                     tags = uiState.tags,
                     availableTags = uiState.availableTags,
                     tagInput = uiState.tagInput,
+                    pendingRemoveTag = uiState.pendingRemoveTag,
                     onTagInputChange = viewModel::onTagInputChange,
                     onAddTag = { viewModel.addTag(ticketId, it) },
-                    onRemoveTag = { viewModel.removeTag(ticketId, it) }
+                    onRemoveTag = { viewModel.removeTag(ticketId, it) },
+                    onSetPendingRemoveTag = viewModel::setPendingRemoveTag
                 )
             }
 
@@ -205,8 +209,18 @@ fun TicketDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 item { Spacer(modifier = Modifier.height(8.dp)) }
+                val displaySettings = uiState.display
                 items(uiState.articles, key = { it.id }) { article ->
-                    ArticleBubble(article = article)
+                    ArticleBubble(
+                        article = article,
+                        displaySettings = displaySettings,
+                        onToggleAvatar = viewModel::toggleShowAvatars,
+                        onCycleBubbleStyle = {
+                            val styles = listOf("chat", "rounded", "square")
+                            val idx = (styles.indexOf(displaySettings.bubbleStyle) + 1) % styles.size
+                            viewModel.setBubbleStyle(styles[idx])
+                        }
+                    )
                 }
                 item { Spacer(modifier = Modifier.height(8.dp)) }
             }
@@ -234,9 +248,11 @@ private fun TicketHeaderCard(
     tags: List<String>,
     availableTags: List<String>,
     tagInput: String,
+    pendingRemoveTag: String?,
     onTagInputChange: (String) -> Unit,
     onAddTag: (String) -> Unit,
-    onRemoveTag: (String) -> Unit
+    onRemoveTag: (String) -> Unit,
+    onSetPendingRemoveTag: (String?) -> Unit
 ) {
     var showTagInput by remember { mutableStateOf(false) }
 
@@ -273,7 +289,15 @@ private fun TicketHeaderCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             tags.forEach { tag ->
-                TagChip(tag = tag, onRemove = { onRemoveTag(tag) })
+                val isPending = tag == pendingRemoveTag
+                TagChip(
+                    tag = tag,
+                    pendingRemove = isPending,
+                    onRemove = {
+                        if (isPending) onRemoveTag(tag)
+                        else onSetPendingRemoveTag(tag)
+                    }
+                )
             }
             if (showTagInput) {
                 TagInputField(
@@ -351,7 +375,7 @@ private fun TagInputField(
         )
         ExposedDropdownMenu(
             expanded = expanded && suggestions.isNotEmpty(),
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false; onDismiss() }
         ) {
             suggestions.take(5).forEach { suggestion ->
                 DropdownMenuItem(
@@ -364,7 +388,12 @@ private fun TagInputField(
 }
 
 @Composable
-private fun ArticleBubble(article: Article) {
+private fun ArticleBubble(
+    article: Article,
+    displaySettings: DisplaySettings,
+    onToggleAvatar: () -> Unit,
+    onCycleBubbleStyle: () -> Unit
+) {
     val isAgent = article.sender.equals("Agent", ignoreCase = true)
     val isInternal = article.internal
     val darkTheme = isSystemInDarkTheme()
@@ -380,49 +409,108 @@ private fun ArticleBubble(article: Article) {
         else -> Color.Transparent
     }
 
+    val senderName = article.from?.substringBefore("<")?.trim() ?: article.sender
+    val showAvatarForCustomer = displaySettings.showAvatars && displaySettings.showCustomerAvatar && !isInternal && !isAgent
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 2.dp),
         horizontalAlignment = if (isAgent) Alignment.End else Alignment.Start
     ) {
+        // Header row: avatar + name + timestamp + settings
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isInternal) {
-                Box(
-                    modifier = Modifier
-                        .background(ZammyColors.StatusPending.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+            if (showAvatarForCustomer) {
+                Avatar(
+                    name = senderName,
+                    size = 20.dp,
+                    modifier = Modifier.clickable(onClick = onToggleAvatar)
+                )
+            } else if (!isInternal && !isAgent) {
+                Spacer(modifier = Modifier.size(20.dp))
+            }
+
+            Text(
+                text = senderName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+
+            if (displaySettings.showTimestamps) {
+                Text(
+                    text = formatArticleDate(article.createdAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Settings buttons on the right
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onToggleAvatar,
+                    modifier = Modifier.size(18.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.article_internal_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ZammyColors.StatusPending
+                    Icon(
+                        Icons.Default.Edit, // reuse as avatar toggle icon
+                        contentDescription = "Avatar umschalten",
+                        modifier = Modifier.size(10.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+                IconButton(
+                    onClick = onCycleBubbleStyle,
+                    modifier = Modifier.size(18.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add, // reuse as bubble style toggle icon
+                        contentDescription = "Bubble-Stil",
+                        modifier = Modifier.size(10.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             }
-            Text(
-                text = article.from?.substringBefore("<")?.trim() ?: article.sender,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = formatArticleDate(article.createdAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        // Internal badge
+        if (!isInternal && displaySettings.showInternalBadge) {
+            // no-op for non-internal, but keeps spacing consistent
+        } else if (isInternal && displaySettings.showInternalBadge) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 4.dp, top = 2.dp)
+                    .background(ZammyColors.StatusPending.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.article_internal_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ZammyColors.StatusPending
+                )
+            }
+        }
+
+        // Bubble card with configurable shape
+        val bubbleShape = when (displaySettings.bubbleStyle) {
+            "square" -> RoundedCornerShape(2.dp)
+            "rounded" -> RoundedCornerShape(16.dp)
+            else -> RoundedCornerShape(
+                topStart = 16.dp, topEnd = 16.dp,
+                bottomStart = if (isAgent) 16.dp else 4.dp,
+                bottomEnd = if (isAgent) 4.dp else 16.dp
             )
         }
 
         Card(
-            modifier = Modifier.fillMaxWidth(0.92f),
-            shape = RoundedCornerShape(
-                topStart = 16.dp, topEnd = 16.dp,
-                bottomStart = if (isAgent) 16.dp else 4.dp,
-                bottomEnd = if (isAgent) 4.dp else 16.dp
-            ),
+            modifier = Modifier.fillMaxWidth(if (displaySettings.bubbleStyle == "chat" && !isInternal && !isAgent) 0.88f else 0.92f),
+            shape = bubbleShape,
             colors = CardDefaults.cardColors(containerColor = bubbleColor),
             border = if (accentColor != Color.Transparent)
                 BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))

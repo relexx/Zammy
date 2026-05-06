@@ -1,5 +1,7 @@
 package com.zammy.app.presentation.settings
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.work.ExistingPeriodicWorkPolicy
 import com.zammy.app.domain.model.DisplaySettings
@@ -154,6 +156,12 @@ class SettingsViewModel @Inject constructor(
     fun setLanguage(lang: String) {
         settingsRepository.setLanguage(lang)
         updateDisplay { it.copy(language = lang) }
+        val locales = when (lang) {
+            "en" -> LocaleListCompat.forLanguageTags("en")
+            "de" -> LocaleListCompat.forLanguageTags("de")
+            else -> LocaleListCompat.getEmptyLocaleList()
+        }
+        AppCompatDelegate.setApplicationLocales(locales)
     }
 
     private fun updateDisplay(transform: (DisplaySettings) -> DisplaySettings) {

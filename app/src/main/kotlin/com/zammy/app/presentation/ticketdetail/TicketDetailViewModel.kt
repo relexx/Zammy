@@ -3,7 +3,9 @@ package com.zammy.app.presentation.ticketdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zammy.app.domain.model.Article
+import com.zammy.app.domain.model.DisplaySettings
 import com.zammy.app.domain.model.Ticket
+import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.usecase.AddCommentUseCase
 import com.zammy.app.domain.usecase.GetTicketDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,17 +28,49 @@ data class TicketDetailUiState(
     val isReplyInternal: Boolean = false,
     val tags: List<String> = emptyList(),
     val availableTags: List<String> = emptyList(),
-    val tagInput: String = ""
+    val tagInput: String = "",
+    val pendingRemoveTag: String? = null,
+    val display: DisplaySettings = DisplaySettings()
 )
 
 @HiltViewModel
 class TicketDetailViewModel @Inject constructor(
     private val getTicketDetailUseCase: GetTicketDetailUseCase,
-    private val addCommentUseCase: AddCommentUseCase
+    private val addCommentUseCase: AddCommentUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
     val uiState: StateFlow<TicketDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        refreshDisplaySettings()
+    }
+
+    fun refreshDisplaySettings() {
+        _uiState.update {
+            it.copy(
+                display = DisplaySettings(
+                    themeMode          = settingsRepository.getThemeMode(),
+                    accentColorHex     = settingsRepository.getAccentColorHex(),
+                    listLayout         = settingsRepository.getListLayout(),
+                    sortBy             = settingsRepository.getSortBy(),
+                    density            = settingsRepository.getDensity(),
+                    showAvatars        = settingsRepository.getShowAvatars(),
+                    showTags           = settingsRepository.getShowTags(),
+                    showPriority       = settingsRepository.getShowPriority(),
+                    showTicketId       = settingsRepository.getShowTicketId(),
+                    boldUnread         = settingsRepository.getBoldUnread(),
+                    highlightEscalated = settingsRepository.getHighlightEscalated(),
+                    bubbleStyle        = settingsRepository.getBubbleStyle(),
+                    showTimestamps     = settingsRepository.getShowTimestamps(),
+                    showCustomerAvatar = settingsRepository.getShowCustomerAvatar(),
+                    showInternalBadge  = settingsRepository.getShowInternalBadge(),
+                    language           = settingsRepository.getLanguage(),
+                )
+            )
+        }
+    }
 
     fun loadTicket(ticketId: Int) {
         viewModelScope.launch {
@@ -89,6 +123,8 @@ class TicketDetailViewModel @Inject constructor(
 
     fun onTagInputChange(input: String) = _uiState.update { it.copy(tagInput = input) }
 
+    fun setPendingRemoveTag(tag: String?) = _uiState.update { it.copy(pendingRemoveTag = tag) }
+
     fun addTag(ticketId: Int, tag: String) {
         if (tag.isBlank()) return
         viewModelScope.launch {
@@ -100,6 +136,7 @@ class TicketDetailViewModel @Inject constructor(
     }
 
     fun removeTag(ticketId: Int, tag: String) {
+        _uiState.update { it.copy(pendingRemoveTag = null) }
         viewModelScope.launch {
             getTicketDetailUseCase.removeTag(ticketId, tag).fold(
                 onSuccess = { _uiState.update { it.copy(tags = it.tags - tag) } },
@@ -136,6 +173,23 @@ class TicketDetailViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun toggleShowAvatars() {
+        val next = !_uiState.value.display.showAvatars
+        _uiState.update { s -> s.copy(display = s.display.copy(showAvatars = next)) }
+        settingsRepository.setShowAvatars(next)
+    }
+
+    fun setBubbleStyle(style: String) {
+        _uiState.update { s -> s.copy(display = s.display.copy(bubbleStyle = style)) }
+        settingsRepository.setBubbleStyle(style)
+    }
+
+    fun toggleTimestampFormat() {
+        val current = _uiState.value.display.showTimestamps
+        _uiState.update { s -> s.copy(display = s.display.copy(showTimestamps = !current)) }
+        settingsRepository.setShowTimestamps(!current)
     }
 
     fun clearMessages() = _uiState.update { it.copy(error = null, successMessage = null) }

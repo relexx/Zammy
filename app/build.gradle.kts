@@ -14,8 +14,8 @@ android {
         applicationId = "com.zammy.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.1.0"
+        versionCode = 11
+        versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -89,6 +89,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
