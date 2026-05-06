@@ -76,7 +76,7 @@ fun TagChip(
     if (onRemove != null) {
         InputChip(
             selected = false,
-            onClick = {},
+            onClick = { onRemove() },
             label = { Text(tag, fontSize = 12.sp) },
             trailingIcon = {
                 Icon(

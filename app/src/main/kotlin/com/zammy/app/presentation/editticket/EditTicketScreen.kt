@@ -71,7 +71,10 @@ fun EditTicketScreen(
     LaunchedEffect(ticketId) { viewModel.loadTicket(ticketId) }
 
     LaunchedEffect(uiState.isDone) {
-        if (uiState.isDone) onSaved()
+        if (uiState.isDone) {
+            viewModel.clearDone()
+            onSaved()
+        }
     }
 
     LaunchedEffect(uiState.error) {

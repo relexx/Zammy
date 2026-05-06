@@ -48,7 +48,8 @@ class EditTicketViewModel @Inject constructor(
     fun loadTicket(ticketId: Int) {
         _uiState.update { it.copy(ticketId = ticketId, isLoading = true) }
         viewModelScope.launch {
-            getTicketDetailUseCase.getTicket(ticketId).onSuccess { ticket ->
+            val ticketResult = getTicketDetailUseCase.getTicket(ticketId)
+            ticketResult.onSuccess { ticket ->
                 _uiState.update { state ->
                     state.copy(
                         title = ticket.title,
@@ -62,9 +63,9 @@ class EditTicketViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Fehler beim Laden") }
             }
 
+            val cachedTicket = ticketResult.getOrNull()
             getGroupsUseCase().onSuccess { groups ->
-                val ticket = getTicketDetailUseCase.getTicket(ticketId).getOrNull()
-                val groupId = groups.find { it.name == ticket?.group }?.id ?: groups.firstOrNull()?.id
+                val groupId = groups.find { it.name == cachedTicket?.group }?.id ?: groups.firstOrNull()?.id
                 _uiState.update { it.copy(groups = groups, selectedGroupId = groupId) }
             }
 
@@ -149,4 +150,6 @@ class EditTicketViewModel @Inject constructor(
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+
+    fun clearDone() = _uiState.update { it.copy(isDone = false) }
 }
