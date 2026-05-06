@@ -20,7 +20,8 @@ data class LoginUiState(
     val password: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val step: Int = 1
 )
 
 @HiltViewModel
@@ -40,7 +41,7 @@ class LoginViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 serverUrl = settingsRepository.getServerUrl(),
-                username = settingsRepository.getUsername()
+                username  = settingsRepository.getUsername()
             )
         }
     }
@@ -57,10 +58,22 @@ class LoginViewModel @Inject constructor(
         _uiState.update { it.copy(password = password, error = null) }
     }
 
+    fun nextStep() {
+        if (_uiState.value.serverUrl.isBlank()) {
+            _uiState.update { it.copy(error = "Bitte Server-URL eingeben") }
+            return
+        }
+        _uiState.update { it.copy(step = 2, error = null) }
+    }
+
+    fun prevStep() {
+        _uiState.update { it.copy(step = 1, error = null) }
+    }
+
     fun login() {
         val state = _uiState.value
-        if (state.serverUrl.isBlank() || state.username.isBlank() || state.password.isBlank()) {
-            _uiState.update { it.copy(error = "Please fill in all fields") }
+        if (state.username.isBlank() || state.password.isBlank()) {
+            _uiState.update { it.copy(error = "Bitte alle Felder ausfüllen") }
             return
         }
 
@@ -85,7 +98,7 @@ class LoginViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = "Login failed: ${error.message ?: "Unbekannter Fehler"}"
+                            error = "Login fehlgeschlagen: ${error.message ?: "Unbekannter Fehler"}"
                         )
                     }
                 }

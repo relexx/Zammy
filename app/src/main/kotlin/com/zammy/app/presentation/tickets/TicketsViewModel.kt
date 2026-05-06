@@ -2,7 +2,9 @@ package com.zammy.app.presentation.tickets
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zammy.app.domain.model.DisplaySettings
 import com.zammy.app.domain.model.Ticket
+import com.zammy.app.domain.repository.SettingsRepository
 import com.zammy.app.domain.usecase.GetTicketsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -24,12 +26,14 @@ data class TicketsUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,
-    val selectedTab: Int = 0
+    val selectedTab: Int = 0,
+    val display: DisplaySettings = DisplaySettings()
 )
 
 @HiltViewModel
 class TicketsViewModel @Inject constructor(
-    private val getTicketsUseCase: GetTicketsUseCase
+    private val getTicketsUseCase: GetTicketsUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketsUiState())
@@ -38,8 +42,34 @@ class TicketsViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
+        refreshDisplaySettings()
         observeTickets()
         refresh()
+    }
+
+    fun refreshDisplaySettings() {
+        _uiState.update {
+            it.copy(
+                display = DisplaySettings(
+                    themeMode         = settingsRepository.getThemeMode(),
+                    accentColorHex    = settingsRepository.getAccentColorHex(),
+                    listLayout        = settingsRepository.getListLayout(),
+                    sortBy            = settingsRepository.getSortBy(),
+                    density           = settingsRepository.getDensity(),
+                    showAvatars       = settingsRepository.getShowAvatars(),
+                    showTags          = settingsRepository.getShowTags(),
+                    showPriority      = settingsRepository.getShowPriority(),
+                    showTicketId      = settingsRepository.getShowTicketId(),
+                    boldUnread        = settingsRepository.getBoldUnread(),
+                    highlightEscalated = settingsRepository.getHighlightEscalated(),
+                    bubbleStyle       = settingsRepository.getBubbleStyle(),
+                    showTimestamps    = settingsRepository.getShowTimestamps(),
+                    showCustomerAvatar = settingsRepository.getShowCustomerAvatar(),
+                    showInternalBadge = settingsRepository.getShowInternalBadge(),
+                    language          = settingsRepository.getLanguage(),
+                )
+            )
+        }
     }
 
     private fun observeTickets() {

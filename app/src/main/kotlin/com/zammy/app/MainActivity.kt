@@ -9,8 +9,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zammy.app.navigation.AppNavigation
+import com.zammy.app.presentation.settings.SettingsViewModel
+import com.zammy.app.ui.theme.ThemeMode
 import com.zammy.app.ui.theme.ZammyTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -35,7 +40,14 @@ class MainActivity : ComponentActivity() {
         val initialTicketId = intent.getIntExtra("ticket_id", -1).takeIf { it > 0 }
 
         setContent {
-            ZammyTheme {
+            val settingsVm: SettingsViewModel = hiltViewModel()
+            val uiState by settingsVm.uiState.collectAsStateWithLifecycle()
+            val themeMode = when (uiState.display.themeMode) {
+                "LIGHT" -> ThemeMode.LIGHT
+                "DARK"  -> ThemeMode.DARK
+                else    -> ThemeMode.SYSTEM
+            }
+            ZammyTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
